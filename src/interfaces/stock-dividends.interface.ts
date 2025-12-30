@@ -13,4 +13,15 @@ export interface StockDividends {
   exdividendReferencePrice: number;
   cashDividend: number;
   stockDividendShares: number;
+  latestFinancialReportDate?: string | null;
+  latestNetAssetValuePerShare?: number | null;
+  latestEarningsPerShare?: number | null;
+  capitalIncreaseRight?: string | null;
+  employeeBonusShares?: number | null;
+  paidCapitalIncrease?: number | null;
+  subscriptionPrice?: number | null;
+  publicOffering?: number | null;
+  employeeSubscription?: number | null;
+  existingShareholderSubscription?: number | null;
+  sharesPerThousand?: number | null;
 }

@@ -13,4 +13,11 @@ export interface StockCapitalReductions {
   haltDate: string;
   sharesPerThousand: number;
   refundPerShare: number;
+  cashDividendPerShare?: number | null;
+  paidCapitalIncrease?: number | null;
+  subscriptionPrice?: number | null;
+  publicOffering?: number | null;
+  employeeSubscription?: number | null;
+  existingShareholderSubscription?: number | null;
+  sharesPerThousandSubscription?: number | null;
 }

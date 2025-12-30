@@ -26,9 +26,13 @@
   * [.stocks.eps(options)](#stocksepsoptions)
   * [.stocks.revenue(options)](#stocksrevenueoptions)
   * [.stocks.dividends(options)](#stocksdividendsoptions)
+  * [.stocks.dividendsAnnouncement([options])](#stocksdividendsannouncementoptions)
   * [.stocks.capitalReductions(options)](#stockscapitalreductionoptions)
+  * [.stocks.capitalReductionAnnouncement([options])](#stockscapitalreductionannouncementoptions)
   * [.stocks.splits(options)](#stockssplitsoptions)
+  * [.stocks.splitAnnouncement([options])](#stockssplitannouncementoptions)
   * [.stocks.etfSplits(options)](#stocksetfsplitsoptions)
+  * [.stocks.etfSplitAnnouncement([options])](#stocksetfsplitannouncementoptions)
   * [.indices.list([options])](#indiceslistoptions)
   * [.indices.quote(options)](#indicesquoteoptions)
   * [.indices.historical(options)](#indiceshistoricaloptions)
@@ -626,6 +630,7 @@ twstock.stocks.revenue({ symbol: '2330', year: 2023, month: 1 })
   * `endDate`: {string} 結束日期 (`'YYYY-MM-DD'`)
   * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃)
   * `symbol` (optional): {string} 股票代號
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料 (預設: `true`)。設為 `false` 可顯著加快查詢速度，但僅適用於上市股票
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `date`: {string} 資料日期
   * `exchange`: {string} 市場別
@@ -641,6 +646,20 @@ twstock.stocks.revenue({ symbol: '2330', year: 2023, month: 1 })
   * `exdividendReferencePrice`: {number} 減除股利參考價
   * `cashDividend`: {number} 現金股利
   * `stockDividendShares`: {number} 每仟股無償配股
+  * `latestFinancialReportDate`: {string} 最近一次申報資料日期 (可能為 `null`)
+  * `latestNetAssetValuePerShare`: {number} 最近一次申報每股（單位）淨值 (可能為 `null`)
+  * `latestEarningsPerShare`: {number} 最近一次申報每股（單位）盈餘 (可能為 `null`)
+  * **當 `includeDetail=true` 時（預設），額外包含以下欄位：**
+    * `capitalIncreaseRight`: {string} 增資配股除權 (可能為 `null`)
+    * `employeeBonusShares`: {number} 員工紅利轉增資 (可能為 `null`)
+    * `paidCapitalIncrease`: {number} 有償現金增資 (可能為 `null`)
+    * `subscriptionPrice`: {number} 每股認購金額 (可能為 `null`)
+    * `publicOffering`: {number} 公開承銷 (可能為 `null`)
+    * `employeeSubscription`: {number} 員工認購 (可能為 `null`)
+    * `existingShareholderSubscription`: {number} 原股東認購 (可能為 `null`)
+    * `sharesPerThousand`: {number} 按股東持股比例每千股認購 (可能為 `null`)
+
+**說明**: `latestFinancialReportDate`、`latestNetAssetValuePerShare`、`latestEarningsPerShare` 欄位提供基本面分析所需的財報資訊，無需額外 API 呼叫即可取得。這些欄位對於 ETF 可能顯示為 `null`。現金增資相關欄位 (capitalIncreaseRight 至 sharesPerThousand) 在大多數情況下為 0 或 null，僅在有現金增資配股時才有實際數值。
 
 ```js
 twstock.stocks.dividends({ startDate: '2023-01-01', endDate: '2023-01-31', symbol: '0050' })
@@ -666,6 +685,51 @@ twstock.stocks.dividends({ startDate: '2023-01-01', endDate: '2023-01-31', symbo
 // ]
 ```
 
+### `.stocks.dividendsAnnouncement([options])`
+
+取得上市股票的除權除息預告資料。此 API 提供未來即將發生的除權除息事件。
+
+* `options`: {Object}
+  * `symbol` (optional): {string} 股票代號
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+* Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
+  * `symbol`: {string} 股票代號
+  * `name`: {string} 股票名稱
+  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `exdividendDate`: {string} 除權除息日期
+  * `dividendType`: {string} 除權息類型 (`'權'`、`'息'`、`'權息'`)
+  * `stockDividendRatio`: {number} 無償配股率
+  * `cashCapitalIncreaseRatio`: {number} 現金增資配股率
+  * `subscriptionPrice`: {number} 現金增資認購價
+  * `cashDividend`: {number} 現金股利
+  * **當 `includeDetail=true` 時，額外包含以下欄位：**
+    * `stockDividendShares`: {number} 按普通股股東持股比例每千股無償配股
+    * `employeeBonusShares`: {number} 員工紅利轉增資
+    * `paidCapitalIncrease`: {number} 有償現金增資
+    * `publicOffering`: {number} 公開承銷
+    * `employeeSubscription`: {number} 員工認購
+    * `existingShareholderSubscription`: {number} 原股東認購
+    * `sharesPerThousand`: {number} 按股東持股比例每千股認購
+
+```js
+twstock.stocks.dividendsAnnouncement({ symbol: '2330' })
+  .then(data => console.log(data));
+// Prints:
+// [
+//   {
+//     symbol: '2330',
+//     name: '台積電',
+//     exchange: 'TWSE',
+//     exdividendDate: '2026-01-15',
+//     dividendType: '息',
+//     stockDividendRatio: 0,
+//     cashCapitalIncreaseRatio: 0,
+//     subscriptionPrice: 0,
+//     cashDividend: 3.5
+//   }
+// ]
+```
+
 ### `.stocks.capitalReductions(options)`
 
 取得上市(櫃)股票在特定期間的普通股減資資料。
@@ -675,6 +739,7 @@ twstock.stocks.dividends({ startDate: '2023-01-01', endDate: '2023-01-31', symbo
   * `endDate`: {string} 結束日期 (`'YYYY-MM-DD'`)
   * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃)
   * `symbol` (optional): {string} 股票代號
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料 (預設: `true`)。設為 `false` 可顯著加快查詢速度，但僅適用於上市股票
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `resumeDate`: {string} 恢復買賣日期
   * `exchange`: {string} 市場別
@@ -690,6 +755,16 @@ twstock.stocks.dividends({ startDate: '2023-01-01', endDate: '2023-01-31', symbo
   * `haltDate`: {string} 停止買賣日期
   * `sharesPerThousand`: {number} 每壹仟股換發新股票
   * `refundPerShare`: {number} 每股退還股款
+  * **當 `includeDetail=true` 時（預設），額外包含以下欄位：**
+    * `cashDividendPerShare`: {number} 原股每股配發現金股利 (可能為 `null`)
+    * `paidCapitalIncrease`: {number} 減資並有償現金增資 (可能為 `null`)
+    * `subscriptionPrice`: {number} 每股認購金額 (可能為 `null`)
+    * `publicOffering`: {number} 公開承銷 (可能為 `null`)
+    * `employeeSubscription`: {number} 員工認購 (可能為 `null`)
+    * `existingShareholderSubscription`: {number} 原股東認購 (可能為 `null`)
+    * `sharesPerThousandSubscription`: {number} 按股東持股比例每千股認購 (可能為 `null`)
+
+**說明**: 現金增資相關欄位 (cashDividendPerShare 至 sharesPerThousandSubscription) 在大多數情況下為 0 或 null，僅在減資同時進行現金增資時才有實際數值。
 
 ```js
 twstock.stocks.capitalReductions({ startDate: '2023-02-01', endDate: '2023-02-28', exchange: 'TWSE' })
@@ -715,6 +790,53 @@ twstock.stocks.capitalReductions({ startDate: '2023-02-01', endDate: '2023-02-28
 // ]
 ```
 
+### `.stocks.capitalReductionAnnouncement([options])`
+
+取得上市股票的普通股減資預告資料。此 API 提供已公告但尚未執行的減資計畫。
+
+* `options`: {Object}
+  * `symbol` (optional): {string} 股票代號
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+* Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
+  * `symbol`: {string} 股票代號
+  * `name`: {string} 股票名稱
+  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `haltDate`: {string} 停止買賣日期
+  * `resumeDate`: {string} 恢復買賣日期
+  * `reductionRatio`: {number} 減資換股率 (每股換發新股數)
+  * `reason`: {string} 減資原因 (例如: `'退還股款'`、`'彌補虧損'`)
+  * `refundPerShare`: {number} 每股退還股款 (元)
+  * `cashIncreaseRatioAfterReduction`: {number} 減資後現金增資配股率
+  * `subscriptionPrice`: {number} 現金增資認購價 (元)
+  * **當 `includeDetail=true` 時，額外包含以下欄位：**
+    * `sharesPerThousand`: {number} 每壹仟股換發新股票
+    * `cashDividendPerShare`: {number} 原股每股配發現金股利
+    * `paidCapitalIncrease`: {number} 減資並(有償)現金增資
+    * `publicOffering`: {number} 公開承銷
+    * `employeeSubscription`: {number} 員工認購
+    * `existingShareholderSubscription`: {number} 原股東認購
+    * `sharesPerThousandSubscription`: {number} 按股東持股比例每千股認購
+
+```js
+twstock.stocks.capitalReductionAnnouncement({ symbol: '1414' })
+  .then(data => console.log(data));
+// Prints:
+// [
+//   {
+//     symbol: '1414',
+//     name: '東和',
+//     exchange: 'TWSE',
+//     haltDate: '2025-12-31',
+//     resumeDate: '2026-01-12',
+//     reductionRatio: 0.9,
+//     reason: '退還股款',
+//     refundPerShare: 1,
+//     cashIncreaseRatioAfterReduction: 0,
+//     subscriptionPrice: 0
+//   }
+// ]
+```
+
 ### `.stocks.splits(options)`
 
 取得上市(櫃)股票在特定期間的變更股票面額資料。
@@ -734,6 +856,7 @@ twstock.stocks.capitalReductions({ startDate: '2023-02-01', endDate: '2023-02-28
   * `limitUpPrice`: {number} 漲停價格
   * `limitDownPrice`: {number} 跌停價格
   * `openingReferencePrice`: {number} 開盤競價基準
+  * `haltDate`: {string} 停止買賣日期 (可能為 `null`)
 
 ```js
 twstock.stocks.splits({ startDate: '2022-07-01', endDate: '2022-07-31', exchange: 'TWSE' })
@@ -750,6 +873,43 @@ twstock.stocks.splits({ startDate: '2022-07-01', endDate: '2022-07-31', exchange
 //     limitUpPrice: 683,
 //     limitDownPrice: 560,
 //     openingReferencePrice: 621
+//   }
+// ]
+```
+
+### `.stocks.splitAnnouncement([options])`
+
+取得上市股票的變更股票面額預告資料。此 API 提供股票面額變更計畫（例如從 10 元面額改為 5 元）。
+
+* `options`: {Object}
+  * `symbol` (optional): {string} 股票代號
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+* Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
+  * `symbol`: {string} 股票代號
+  * `name`: {string} 股票名稱
+  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `haltDate`: {string} 停止買賣日期
+  * `resumeDate`: {string} 恢復買賣日期
+  * `splitRatio`: {number} 每股換發新股比例
+  * `oldFaceValue`: {number} 舊面額 (元)
+  * `newFaceValue`: {number} 新面額 (元)
+  * **當 `includeDetail=true` 時，額外包含以下欄位：**
+    * `sharesPerOldShare`: {number} 每股換發新股票
+
+```js
+twstock.stocks.splitAnnouncement({ symbol: '1234' })
+  .then(data => console.log(data));
+// Prints:
+// [
+//   {
+//     symbol: '1234',
+//     name: '測試科技',
+//     exchange: 'TWSE',
+//     haltDate: '2026-01-15',
+//     resumeDate: '2026-01-25',
+//     splitRatio: 0.5,
+//     oldFaceValue: 10,
+//     newFaceValue: 5
 //   }
 // ]
 ```
@@ -778,6 +938,38 @@ twstock.stocks.splits({ startDate: '2022-07-01', endDate: '2022-07-31', exchange
 ```js
 twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', exchange: 'TWSE' })
   .then(data => console.log(data));
+```
+
+### `.stocks.etfSplitAnnouncement([options])`
+
+取得上市 ETF 的分割(反分割)預告資料。此 API 提供 ETF 分割或反分割計畫。
+
+* `options`: {Object}
+  * `symbol` (optional): {string} ETF 代號
+* Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
+  * `symbol`: {string} ETF 代號
+  * `name`: {string} ETF 名稱
+  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `haltDate`: {string} 停止買賣日期
+  * `resumeDate`: {string} 恢復買賣日期
+  * `splitType`: {string} 分割類型 (`'分割'` 或 `'反分割'`)
+  * `splitRatio`: {number} 分割比例 (例如: 0.5 表示 1:2 分割，2.0 表示 2:1 反分割)
+
+```js
+twstock.stocks.etfSplitAnnouncement({ symbol: '00901' })
+  .then(data => console.log(data));
+// Prints:
+// [
+//   {
+//     symbol: '00901',
+//     name: '永豐台灣ESG',
+//     exchange: 'TWSE',
+//     haltDate: '2026-01-20',
+//     resumeDate: '2026-01-28',
+//     splitType: '分割',
+//     splitRatio: 0.5
+//   }
+// ]
 ```
 
 ### `.indices.list([options])`

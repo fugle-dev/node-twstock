@@ -8,4 +8,5 @@ export interface StockSplits {
   limitUpPrice: number;
   limitDownPrice: number;
   openingReferencePrice: number;
+  haltDate?: string | null;
 }

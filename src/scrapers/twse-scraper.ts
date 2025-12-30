@@ -3,8 +3,8 @@ import * as numeral from 'numeral';
 import { DateTime } from 'luxon';
 import { Scraper } from './scraper';
 import { Exchange, Index } from '../enums';
-import { asIndex } from '../utils';
-import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StockDividends, StockFiniHoldings, StockHistorical, StockInstitutional, StockMarginTrades, StockShortSales, StockSplits, StockValues } from '../interfaces';
+import { asIndex, rocToWestern, parseNumeric, stripHtmlTags, parseFinancialReportDate } from '../utils';
+import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StocksCapitalReductionAnnouncement, StockDividends, StocksDividendAnnouncement, StocksEtfSplitAnnouncement, StockFiniHoldings, StockHistorical, StockInstitutional, StockMarginTrades, StockShortSales, StockSplits, StocksSplitAnnouncement, StockValues } from '../interfaces';
 
 export class TwseScraper extends Scraper {
   async fetchStocksHistorical(options: { date: string, symbol?: string }) {
@@ -309,8 +309,8 @@ export class TwseScraper extends Scraper {
     return symbol ? data.find(data => data.symbol === symbol) : data;
   }
 
-  async fetchStocksDividends(options: { startDate: string; endDate: string, symbol?: string }) {
-    const { startDate, endDate, symbol } = options;
+  async fetchStocksDividends(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
+    const { startDate, endDate, symbol, includeDetail = true } = options;
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -324,35 +324,39 @@ export class TwseScraper extends Scraper {
 
     const data = await Promise.all(json.data.map(async (row: string[]) => {
       const [date, symbol, name, ...values] = row;
-      const formattedDate = date.replace(
-        /(\d+)年(\d+)月(\d+)日/,
-        (_, year, month, day) => {
-          const westernYear = parseInt(year) + 1911;
-          return `${westernYear}-${month.padStart(2, '0')}-${day.padStart(
-            2,
-            '0'
-          )}`;
-        }
-      );
+      const formattedDate = rocToWestern(date);
 
       const data: Record<string, any> = {};
       data.date = formattedDate;
       data.exchange = Exchange.TWSE;
       data.symbol = symbol;
       data.name = name.trim();
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.dividend = numeral(values[2]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.dividend = parseNumeric(values[2]);
       data.dividendType = values[3].trim();
-      data.limitUpPrice = numeral(values[4]).value();
-      data.limitDownPrice = numeral(values[5]).value();
-      data.openingReferencePrice = numeral(values[6]).value();
-      data.exdividendReferencePrice = numeral(values[7]).value();
+      data.limitUpPrice = parseNumeric(values[4]);
+      data.limitDownPrice = parseNumeric(values[5]);
+      data.openingReferencePrice = parseNumeric(values[6]);
+      data.exdividendReferencePrice = parseNumeric(values[7]);
+      data.latestFinancialReportDate = parseFinancialReportDate(values[9]);
+      data.latestNetAssetValuePerShare = parseNumeric(values[10]);
+      data.latestEarningsPerShare = parseNumeric(values[11]);
 
-      const [_, detailDate] = values[8].split(',');
-      const detail = await this.fetchStocksDividendsDetail({symbol, date: detailDate})
+      // Include detail API call if requested (default: true for backward compatibility)
+      if (includeDetail) {
+        try {
+          const [, detailDate] = values[8].split(',');
+          const detail = await this.fetchStocksDividendsDetail({ symbol, date: detailDate });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch dividend detail for ${symbol}:`, error);
+          return data;
+        }
+      }
 
-      return { ...data, ...detail };
+      return data;
     }) as StockDividends[]);
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
@@ -372,19 +376,74 @@ export class TwseScraper extends Scraper {
     const json = response.data.stat === 'ok' && response.data;
     if (!json) return null;
 
-    const [_, name, ...values] = json.data[0];
+    const [, name, ...values] = json.data[0];
 
     const data: Record<string, any> = {};
     data.symbol = symbol;
     data.name = name.trim();
-    data.cashDividend = values[0] && parseFloat(values[0]);
-    data.stockDividendShares = values[2] && parseFloat(values[2]);
+    data.cashDividend = parseNumeric(values[0]);
+    data.capitalIncreaseRight = values[1] || null;
+    data.stockDividendShares = parseNumeric(values[2]);
+    data.employeeBonusShares = parseNumeric(values[3]);
+    data.paidCapitalIncrease = parseNumeric(values[4]);
+    data.subscriptionPrice = parseNumeric(values[5]);
+    data.publicOffering = parseNumeric(values[6]);
+    data.employeeSubscription = parseNumeric(values[7]);
+    data.existingShareholderSubscription = parseNumeric(values[8]);
+    data.sharesPerThousand = parseNumeric(values[9]);
 
     return data;
   }
 
-  async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string }) {
-    const { startDate, endDate, symbol } = options;
+  async fetchStocksDividendsAnnouncement(options?: { symbol?: string, includeDetail?: boolean }) {
+    const { symbol: filterSymbol, includeDetail = false } = options || {};
+    const query = new URLSearchParams({
+      response: 'json',
+      _: Date.now().toString(),
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/exRight/TWT48U?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data?.stat === 'OK' && response.data;
+    if (!json || !json.data) return [];
+
+    const data = await Promise.all(json.data.map(async (row: string[]) => {
+      const [date, symbol, name, dividendType, stockDividendRatio, cashCapitalIncreaseRatio, subscriptionPrice, cashDividend] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TWSE;
+      data.exdividendDate = rocToWestern(date);
+      data.dividendType = dividendType.trim() as '權' | '息' | '權息';
+      data.stockDividendRatio = parseNumeric(stockDividendRatio);
+      data.cashCapitalIncreaseRatio = parseNumeric(cashCapitalIncreaseRatio);
+      data.subscriptionPrice = parseNumeric(stripHtmlTags(subscriptionPrice));
+      data.cashDividend = parseNumeric(stripHtmlTags(cashDividend));
+
+      // Include detail API call if requested (default: false for announcements)
+      if (includeDetail) {
+        try {
+          const detail = await this.fetchStocksDividendsAnnouncementDetail({
+            symbol: data.symbol,
+            date: data.exdividendDate
+          });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch dividend announcement detail for ${data.symbol}:`, error);
+          return data;
+        }
+      }
+
+      return data;
+    }) as StocksDividendAnnouncement[]);
+
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
+  }
+
+  async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
+    const { startDate, endDate, symbol, includeDetail = true } = options;
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -398,25 +457,34 @@ export class TwseScraper extends Scraper {
 
     const data = await Promise.all(json.data.map(async (row: string[]) => {
       const [date, symbol, name, ...values] = row;
-      const [year, month, day] = date.split('/');
 
       const data: Record<string, any> = {};
-      data.resumeDate = `${+year + 1911}-${month}-${day}`;
+      data.resumeDate = rocToWestern(date);
       data.exchange = Exchange.TWSE;
       data.symbol = symbol;
       data.name = name.trim();
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.limitUpPrice = numeral(values[2]).value();
-      data.limitDownPrice = numeral(values[3]).value();
-      data.openingReferencePrice = numeral(values[4]).value();
-      data.exrightReferencePrice = numeral(values[5]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.limitUpPrice = parseNumeric(values[2]);
+      data.limitDownPrice = parseNumeric(values[3]);
+      data.openingReferencePrice = parseNumeric(values[4]);
+      data.exrightReferencePrice = parseNumeric(values[5]);
       data.reason = values[6].trim();
 
-      const [_, detailDate] = values[7].split(',');
-      const detail = await this.fetchStockCapitalReductionDetail({symbol, date: detailDate})
+      // Include detail API call if requested (default: true for backward compatibility)
+      if (includeDetail) {
+        try {
+          const [, detailDate] = values[7].split(',');
+          const detail = await this.fetchStockCapitalReductionDetail({ symbol, date: detailDate });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch capital reduction detail for ${symbol}:`, error);
+          return data;
+        }
+      }
 
-      return { ...data, ...detail };
+      return data;
     }) as StockCapitalReductions[]);
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
@@ -435,18 +503,161 @@ export class TwseScraper extends Scraper {
     const json = response.data.stat === 'OK' && response.data;
     if (!json) return null;
 
-    const [_, name, ...values] = json.data[0];
-    const [year, month, day] = values[0].split('/');
+    const [, name, ...values] = json.data[0];
 
     const data: Record<string, any> = {};
 
     data.symbol = symbol;
     data.name = name.trim();
-    data.haltDate = `${+year + 1911}-${month}-${day}`;
-    data.sharesPerThousand = parseFloat(values[1]);
-    data.refundPerShare = parseFloat(values[2]);
+    data.haltDate = rocToWestern(values[0]);
+    data.sharesPerThousand = parseNumeric(values[1]);
+    data.refundPerShare = parseNumeric(values[2]);
+    data.cashDividendPerShare = parseNumeric(values[3]);
+    data.paidCapitalIncrease = parseNumeric(values[4]);
+    data.subscriptionPrice = parseNumeric(values[5]);
+    data.publicOffering = parseNumeric(values[6]);
+    data.employeeSubscription = parseNumeric(values[7]);
+    data.existingShareholderSubscription = parseNumeric(values[8]);
+    data.sharesPerThousandSubscription = parseNumeric(values[9]);
 
     return data;
+  }
+
+  async fetchStocksDividendsAnnouncementDetail(options: { date: string, symbol: string }) {
+    const { date, symbol } = options;
+    const query = new URLSearchParams({
+      STK_NO: symbol,
+      T1: DateTime.fromISO(date).toFormat('yyyyMMdd'),
+      response: 'json',
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/exRight/TWT49UDetail?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data.stat === 'ok' && response.data;
+    if (!json) return null;
+
+    const [, name, ...values] = json.data[0];
+
+    const data: Record<string, any> = {};
+    data.symbol = symbol;
+    data.name = name.trim();
+    data.cashDividend = parseNumeric(values[0]);
+    data.stockDividendShares = parseNumeric(values[2]);
+    data.employeeBonusShares = parseNumeric(values[3]);
+    data.paidCapitalIncrease = parseNumeric(values[4]);
+    data.subscriptionPrice = parseNumeric(values[5]);
+    data.publicOffering = parseNumeric(values[6]);
+    data.employeeSubscription = parseNumeric(values[7]);
+    data.existingShareholderSubscription = parseNumeric(values[8]);
+    data.sharesPerThousand = parseNumeric(values[9]);
+
+    return data;
+  }
+
+  async fetchStocksCapitalReductionAnnouncementDetail(options: { symbol: string, date: string }) {
+    const { date, symbol } = options;
+    const query = new URLSearchParams({
+      STK_NO: symbol,
+      FILE_DATE: DateTime.fromISO(date).toFormat('yyyyMMdd'),
+      response: 'json',
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/reducation/TWTAVUDetail?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data.stat === 'OK' && response.data;
+    if (!json) return null;
+
+    const [, name, ...values] = json.data[0];
+
+    const data: Record<string, any> = {};
+    data.symbol = symbol;
+    data.name = name.trim();
+    data.haltDate = rocToWestern(values[0]);
+    data.sharesPerThousand = parseNumeric(values[1]);
+    data.refundPerShare = parseNumeric(values[2]);
+    data.cashDividendPerShare = parseNumeric(values[3]);
+    data.paidCapitalIncrease = parseNumeric(values[4]);
+    data.subscriptionPrice = parseNumeric(values[5]);
+    data.publicOffering = parseNumeric(values[6]);
+    data.employeeSubscription = parseNumeric(values[7]);
+    data.existingShareholderSubscription = parseNumeric(values[8]);
+    data.sharesPerThousandSubscription = parseNumeric(values[9]);
+
+    return data;
+  }
+
+  async fetchStocksSplitAnnouncementDetail(options: { symbol: string, date: string }) {
+    const { date, symbol } = options;
+    const query = new URLSearchParams({
+      STK_NO: symbol,
+      FILE_DATE: DateTime.fromISO(date).toFormat('yyyyMMdd'),
+      response: 'json',
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/change/TWTB7UDetail?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data.stat === 'OK' && response.data;
+    if (!json) return null;
+
+    const [, name, ...values] = json.data[0];
+
+    const data: Record<string, any> = {};
+    data.symbol = symbol;
+    data.name = name.trim();
+    data.haltDate = rocToWestern(values[0]);
+    data.sharesPerOldShare = parseNumeric(values[1]);
+    data.oldFaceValue = parseNumeric(values[2]);
+    data.newFaceValue = parseNumeric(values[3]);
+
+    return data;
+  }
+
+  async fetchStocksCapitalReductionAnnouncement(options?: { symbol?: string, includeDetail?: boolean }) {
+    const { symbol: filterSymbol, includeDetail = false } = options || {};
+    const query = new URLSearchParams({
+      response: 'json',
+      _: Date.now().toString(),
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/reducation/TWTAVU?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data?.stat === 'OK' && response.data;
+    if (!json || !json.data) return [];
+
+    const data = await Promise.all(json.data.map(async (row: string[]) => {
+      const [haltDate, symbol, name, resumeDate, reductionRatio, reason, refundPerShare, cashIncreaseRatioAfterReduction, subscriptionPrice] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TWSE;
+      data.haltDate = rocToWestern(haltDate);
+      data.resumeDate = rocToWestern(resumeDate);
+      data.reductionRatio = parseNumeric(reductionRatio);
+      data.reason = reason.trim();
+      data.refundPerShare = parseNumeric(refundPerShare);
+      data.cashIncreaseRatioAfterReduction = parseNumeric(cashIncreaseRatioAfterReduction);
+      data.subscriptionPrice = parseNumeric(subscriptionPrice);
+
+      // Include detail API call if requested (default: false for announcements)
+      if (includeDetail) {
+        try {
+          const detail = await this.fetchStocksCapitalReductionAnnouncementDetail({
+            symbol: data.symbol,
+            date: data.haltDate
+          });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch capital reduction announcement detail for ${data.symbol}:`, error);
+          return data;
+        }
+      }
+
+      return data;
+    }) as StocksCapitalReductionAnnouncement[]);
+
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
   }
 
   async fetchStocksSplits(options: { startDate: string; endDate: string, symbol?: string }) {
@@ -463,18 +674,30 @@ export class TwseScraper extends Scraper {
 
     const data = json.data.map((row: string[]) => {
       const [date, symbol, name, ...values] = row;
-      const [year, month, day] = date.split('/');
 
       const data: Record<string, any> = {};
-      data.resumeDate = `${+year + 1911}-${month}-${day}`;
+      data.resumeDate = rocToWestern(date);
       data.exchange = Exchange.TWSE;
       data.symbol = symbol;
       data.name = name.trim();
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.limitUpPrice = numeral(values[2]).value();
-      data.limitDownPrice = numeral(values[3]).value();
-      data.openingReferencePrice = numeral(values[4]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.limitUpPrice = parseNumeric(values[2]);
+      data.limitDownPrice = parseNumeric(values[3]);
+      data.openingReferencePrice = parseNumeric(values[4]);
+
+      // Parse halt date from detail field: "6531,20211007,20211018"
+      if (values[5]) {
+        const detailParts = values[5].split(',');
+        if (detailParts.length >= 3) {
+          const [, haltDateStr] = detailParts;
+          // haltDateStr is in YYYYMMDD format, convert to YYYY-MM-DD
+          if (haltDateStr && haltDateStr.length === 8) {
+            data.haltDate = `${haltDateStr.substring(0, 4)}-${haltDateStr.substring(4, 6)}-${haltDateStr.substring(6, 8)}`;
+          }
+        }
+      }
+
       return data;
     }) as StockSplits[];
 
@@ -495,25 +718,99 @@ export class TwseScraper extends Scraper {
 
     const data = json.data.map((row: string[]) => {
       const [date, symbol, name, type, ...values] = row;
-      const [year, month, day] = date.split('/');
 
       const data: Record<string, any> = {};
-      data.resumeDate = `${+year + 1911}-${month}-${day}`;
+      data.resumeDate = rocToWestern(date);
       data.exchange = Exchange.TWSE;
       data.symbol = symbol;
       data.name = name.trim();
       data.type = type;
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.limitUpPrice = numeral(values[2]).value();
-      data.limitDownPrice = numeral(values[3]).value();
-      data.openingReferencePrice = numeral(values[4]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.limitUpPrice = parseNumeric(values[2]);
+      data.limitDownPrice = parseNumeric(values[3]);
+      data.openingReferencePrice = parseNumeric(values[4]);
       return data;
     })
       .filter((row: any) => options.reverseSplit ? row.type === '反分割' : row.type === '分割')
       .map((row: any) => _.omit(row, ['type'])) as StockSplits[];
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
+  }
+
+  async fetchStocksSplitAnnouncement(options?: { symbol?: string, includeDetail?: boolean }) {
+    const { symbol: filterSymbol, includeDetail = false } = options || {};
+    const query = new URLSearchParams({
+      response: 'json',
+      _: Date.now().toString(),
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/change/TWTB7U?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data?.stat === 'OK' && response.data;
+    if (!json || !json.data) return [];
+
+    const data = await Promise.all(json.data.map(async (row: string[]) => {
+      const [haltDate, symbol, name, resumeDate, splitRatio, oldFaceValue, newFaceValue] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TWSE;
+      data.haltDate = rocToWestern(haltDate);
+      data.resumeDate = rocToWestern(resumeDate);
+      data.splitRatio = parseNumeric(splitRatio);
+      data.oldFaceValue = parseNumeric(oldFaceValue);
+      data.newFaceValue = parseNumeric(newFaceValue);
+
+      // Include detail API call if requested (default: false for announcements)
+      if (includeDetail) {
+        try {
+          const detail = await this.fetchStocksSplitAnnouncementDetail({
+            symbol: data.symbol,
+            date: data.haltDate
+          });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch split announcement detail for ${data.symbol}:`, error);
+          return data;
+        }
+      }
+
+      return data;
+    }) as StocksSplitAnnouncement[]);
+
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
+  }
+
+  async fetchStocksEtfSplitAnnouncement(options?: { symbol?: string }) {
+    const query = new URLSearchParams({
+      response: 'json',
+      _: Date.now().toString(),
+    });
+    const url = `https://www.twse.com.tw/rwd/zh/split/TWTC9U?${query}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data?.stat === 'OK' && response.data;
+    if (!json || !json.data) return [];
+
+    const data = json.data.map((row: string[]) => {
+      const [haltDate, symbol, name, splitType, resumeDate, splitRatio] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TWSE;
+      data.haltDate = rocToWestern(haltDate);
+      data.resumeDate = rocToWestern(resumeDate);
+      data.splitType = splitType.trim() as '分割' | '反分割';
+      data.splitRatio = parseNumeric(splitRatio);
+
+      return data;
+    }) as StocksEtfSplitAnnouncement[];
+
+    return options?.symbol ? data.filter((item) => item.symbol === options.symbol) : data;
   }
 
   async fetchIndicesHistorical(options: { date: string, symbol?: string }) {

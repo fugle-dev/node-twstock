@@ -463,6 +463,9 @@ describe('TwseScraper', () => {
           limitDownPrice: 27.54,
           openingReferencePrice: 30.6,
           exdividendReferencePrice: 30.6,
+          latestFinancialReportDate: '2024-06-28',
+          latestNetAssetValuePerShare: 35.66,
+          latestEarningsPerShare: null,
           cashDividend: 0.75,
           stockDividendShares: 0,
         },
@@ -479,6 +482,9 @@ describe('TwseScraper', () => {
           limitDownPrice: 17.07,
           openingReferencePrice: 18.96,
           exdividendReferencePrice: 18.96,
+          latestFinancialReportDate: '2024-06-28',
+          latestNetAssetValuePerShare: 22.7,
+          latestEarningsPerShare: null,
           cashDividend: 0.46,
           stockDividendShares: 0,
         },
@@ -521,6 +527,9 @@ describe('TwseScraper', () => {
         limitDownPrice: 17.07,
         openingReferencePrice: 18.96,
         exdividendReferencePrice: 18.96,
+        latestFinancialReportDate: '2024-06-28',
+        latestNetAssetValuePerShare: 22.7,
+        latestEarningsPerShare: null,
         cashDividend: 0.46,
         stockDividendShares: 0,
       }]);
@@ -535,6 +544,30 @@ describe('TwseScraper', () => {
       );
       expect(data).toEqual([]);
     });
+
+    it('should fetch stocks dividends with financial report fields', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends.json') });
+
+      const data = await scraper.fetchStocksDividends({
+        startDate: '2024-03-04',
+        endDate: '2024-03-05',
+        includeDetail: false  // Fast mode - test new financial report fields from main API
+      });
+
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBe(2);
+
+      // Verify financial report fields are parsed
+      expect(data[0]).toHaveProperty('latestFinancialReportDate');
+      expect(data[0]).toHaveProperty('latestNetAssetValuePerShare');
+      expect(data[0]).toHaveProperty('latestEarningsPerShare');
+
+      // Verify actual values from fixture
+      expect(data[0].latestFinancialReportDate).toBe('2024-06-28');
+      expect(data[0].latestNetAssetValuePerShare).toBe(35.66);
+      expect(data[0].latestEarningsPerShare).toBeNull(); // ETF shows "N/A"
+    });
   });
 
   describe('.fetchStocksDividendsDetail()', () => {
@@ -547,10 +580,18 @@ describe('TwseScraper', () => {
       );
       expect(data).toBeDefined();
       expect(data).toEqual({
-        cashDividend: 0.46,
-        stockDividendShares: 0,
-        name: '兆豐台灣晶圓製造',
         symbol: '00913',
+        name: '兆豐台灣晶圓製造',
+        cashDividend: 0.46,
+        capitalIncreaseRight: null,
+        stockDividendShares: 0,
+        employeeBonusShares: 0,
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousand: 0,
       });
     });
 
@@ -562,6 +603,111 @@ describe('TwseScraper', () => {
         'https://www.twse.com.tw/rwd/zh/exRight/TWT49UDetail?STK_NO=4444&T1=20230101&response=json',
       );
       expect(data).toBe(null);
+    });
+  });
+
+  describe('.fetchStocksDividendsAnnouncement()', () => {
+    it('should fetch stocks dividends announcement', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TWSE');
+      expect(data[0]).toHaveProperty('exdividendDate');
+      expect(data[0]).toHaveProperty('dividendType');
+    });
+
+    it('should fetch stocks dividends announcement for the specified stock', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement({ symbol: '00939' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '00939');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '00939',
+        name: '統一台灣高息動能',
+        exchange: 'TWSE',
+        exdividendDate: '2026-01-02',
+        dividendType: '息',
+        stockDividendRatio: 0,
+        cashCapitalIncreaseRatio: 0,
+        subscriptionPrice: 0,
+        cashDividend: 0.072,
+      });
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toEqual([]);
+    });
+
+    it('should fetch stocks dividends announcement with detail when includeDetail is true', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
+
+      scraper.fetchStocksDividendsAnnouncementDetail = jest.fn().mockResolvedValue({
+        symbol: '00939',
+        name: '統一台灣高息動能',
+        cashDividend: 0.072,
+        stockDividendShares: 0,
+        employeeBonusShares: 0,
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousand: 0,
+      });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement({ includeDetail: true });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksDividendsAnnouncementDetail).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('stockDividendShares');
+      expect(data[0]).toHaveProperty('employeeBonusShares');
+    });
+
+    it('should not fetch detail when includeDetail is false', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
+
+      scraper.fetchStocksDividendsAnnouncementDetail = jest.fn();
+
+      const data = await scraper.fetchStocksDividendsAnnouncement({ includeDetail: false });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksDividendsAnnouncementDetail).not.toHaveBeenCalled();
+      expect(data).toBeDefined();
+    });
+  });
+
+  describe('.fetchStocksDividendsAnnouncementDetail()', () => {
+    it('should fetch stocks dividends announcement detail', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement-detail.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncementDetail({ symbol: '00939', date: '2026-01-02' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data).toHaveProperty('symbol', '00939');
+      expect(data).toHaveProperty('name', '統一台灣高息動能');
+      expect(data).toHaveProperty('cashDividend', 0.072);
+      expect(data).toHaveProperty('stockDividendShares', 0);
+    });
+
+    it('should return null when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: { stat: 'error' } });
+
+      const data = await scraper.fetchStocksDividendsAnnouncementDetail({ symbol: '00939', date: '2026-01-02' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeNull();
     });
   });
 
@@ -722,11 +868,18 @@ describe('TwseScraper', () => {
       );
       expect(data).toBeDefined();
       expect(data).toEqual({
-        sharesPerThousand: 720,
-        refundPerShare: 0,
+        symbol: '2911',
         name: '麗嬰房',
         haltDate: '2024-02-29',
-        symbol: '2911',
+        sharesPerThousand: 720,
+        refundPerShare: 0,
+        cashDividendPerShare: 0,
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousandSubscription: 0,
       });
     });
 
@@ -738,6 +891,113 @@ describe('TwseScraper', () => {
         'https://www.twse.com.tw/rwd/zh/reducation/TWTAVUDetail?STK_NO=4444&FILE_DATE=20230101&response=json',
       );
       expect(data).toBe(null);
+    });
+  });
+
+  describe('.fetchStocksCapitalReductionAnnouncement()', () => {
+    it('should fetch stocks capital reduction announcement', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TWSE');
+      expect(data[0]).toHaveProperty('haltDate');
+      expect(data[0]).toHaveProperty('resumeDate');
+      expect(data[0]).toHaveProperty('reason');
+    });
+
+    it('should fetch stocks capital reduction announcement for the specified stock', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement({ symbol: '1414' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '1414');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '1414',
+        name: '東和',
+        exchange: 'TWSE',
+        haltDate: '2025-12-31',
+        resumeDate: '2026-01-12',
+        reductionRatio: 0.9,
+        reason: '退還股款',
+        refundPerShare: 1,
+        cashIncreaseRatioAfterReduction: 0,
+        subscriptionPrice: 0,
+      });
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toEqual([]);
+    });
+
+    it('should fetch stocks capital reduction announcement with detail when includeDetail is true', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
+
+      scraper.fetchStocksCapitalReductionAnnouncementDetail = jest.fn().mockResolvedValue({
+        symbol: '1414',
+        name: '東和',
+        haltDate: '2025-12-31',
+        sharesPerThousand: 900,
+        refundPerShare: 1,
+        cashDividendPerShare: 0,
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousandSubscription: 0,
+      });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement({ includeDetail: true });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksCapitalReductionAnnouncementDetail).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('sharesPerThousand');
+      expect(data[0]).toHaveProperty('cashDividendPerShare');
+    });
+
+    it('should not fetch detail when includeDetail is false', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
+
+      scraper.fetchStocksCapitalReductionAnnouncementDetail = jest.fn();
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement({ includeDetail: false });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksCapitalReductionAnnouncementDetail).not.toHaveBeenCalled();
+      expect(data).toBeDefined();
+    });
+  });
+
+  describe('.fetchStocksCapitalReductionAnnouncementDetail()', () => {
+    it('should fetch stocks capital reduction announcement detail', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement-detail.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncementDetail({ symbol: '1414', date: '2025-12-31' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data).toHaveProperty('symbol', '1414');
+      expect(data).toHaveProperty('name', '東和');
+      expect(data).toHaveProperty('sharesPerThousand', 900);
+    });
+
+    it('should return null when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: { stat: 'error' } });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncementDetail({ symbol: '1414', date: '2025-12-31' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeNull();
     });
   });
 
@@ -761,6 +1021,7 @@ describe('TwseScraper', () => {
           limitUpPrice: 412.5,
           limitDownPrice: 337.5,
           openingReferencePrice: 375,
+          haltDate: '2021-10-07',
         },
         {
           resumeDate: '2022-07-13',
@@ -772,6 +1033,7 @@ describe('TwseScraper', () => {
           limitUpPrice: 683,
           limitDownPrice: 560,
           openingReferencePrice: 621,
+          haltDate: '2022-07-06',
         },
       ]);
     });
@@ -793,6 +1055,7 @@ describe('TwseScraper', () => {
         limitUpPrice: 683,
         limitDownPrice: 560,
         openingReferencePrice: 621,
+        haltDate: '2022-07-06',
       }]);
     });
 
@@ -804,6 +1067,108 @@ describe('TwseScraper', () => {
         'https://www.twse.com.tw/rwd/zh/change/TWTB8U?startDate=20210101&endDate=20210101&response=json',
       );
       expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksSplitAnnouncement()', () => {
+    it('should fetch stocks split announcement', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TWSE');
+      expect(data[0]).toHaveProperty('haltDate');
+      expect(data[0]).toHaveProperty('resumeDate');
+      expect(data[0]).toHaveProperty('splitRatio');
+      expect(data[0]).toHaveProperty('oldFaceValue');
+      expect(data[0]).toHaveProperty('newFaceValue');
+    });
+
+    it('should fetch stocks split announcement for the specified stock', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement({ symbol: '1234' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '1234');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '1234',
+        name: '測試科技',
+        exchange: 'TWSE',
+        haltDate: '2026-01-15',
+        resumeDate: '2026-01-25',
+        splitRatio: 0.5,
+        oldFaceValue: 10,
+        newFaceValue: 5,
+      });
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toEqual([]);
+    });
+
+    it('should fetch stocks split announcement with detail when includeDetail is true', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement.json') });
+
+      scraper.fetchStocksSplitAnnouncementDetail = jest.fn().mockResolvedValue({
+        symbol: '7780',
+        name: '大研生醫',
+        haltDate: '2026-01-09',
+        sharesPerOldShare: 10,
+        oldFaceValue: 10,
+        newFaceValue: 1,
+      });
+
+      const data = await scraper.fetchStocksSplitAnnouncement({ includeDetail: true });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksSplitAnnouncementDetail).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('sharesPerOldShare');
+    });
+
+    it('should not fetch detail when includeDetail is false', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement.json') });
+
+      scraper.fetchStocksSplitAnnouncementDetail = jest.fn();
+
+      const data = await scraper.fetchStocksSplitAnnouncement({ includeDetail: false });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(scraper.fetchStocksSplitAnnouncementDetail).not.toHaveBeenCalled();
+      expect(data).toBeDefined();
+    });
+  });
+
+  describe('.fetchStocksSplitAnnouncementDetail()', () => {
+    it('should fetch stocks split announcement detail', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-split-announcement-detail.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncementDetail({ symbol: '7780', date: '2026-01-09' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data).toHaveProperty('symbol', '7780');
+      expect(data).toHaveProperty('name', '大研生醫');
+      expect(data).toHaveProperty('sharesPerOldShare', 10);
+      expect(data).toHaveProperty('oldFaceValue', 10);
+      expect(data).toHaveProperty('newFaceValue', 1);
+    });
+
+    it('should return null when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: { stat: 'error' } });
+
+      const data = await scraper.fetchStocksSplitAnnouncementDetail({ symbol: '7780', date: '2026-01-09' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeNull();
     });
   });
 
@@ -890,6 +1255,52 @@ describe('TwseScraper', () => {
         limitDownPrice: 90,
         openingReferencePrice: 100,
       }]);
+    });
+  });
+
+  describe('.fetchStocksEtfSplitAnnouncement()', () => {
+    it('should fetch stocks ETF split announcement', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-etf-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TWSE');
+      expect(data[0]).toHaveProperty('haltDate');
+      expect(data[0]).toHaveProperty('resumeDate');
+      expect(data[0]).toHaveProperty('splitType');
+      expect(data[0]).toHaveProperty('splitRatio');
+    });
+
+    it('should fetch stocks ETF split announcement for the specified stock', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-etf-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement({ symbol: '00901' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '00901');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '00901',
+        name: '永豐台灣ESG',
+        exchange: 'TWSE',
+        haltDate: '2026-01-20',
+        resumeDate: '2026-01-28',
+        splitType: '分割',
+        splitRatio: 0.5,
+      });
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-etf-split-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toEqual([]);
     });
   });
 

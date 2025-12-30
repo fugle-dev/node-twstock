@@ -5,7 +5,7 @@ import * as numeral from 'numeral';
 import { DateTime } from 'luxon';
 import { Scraper } from './scraper';
 import { Exchange } from '../enums';
-import { asIndex, isWarrant } from '../utils';
+import { asIndex, isWarrant, rocToWestern, parseNumeric } from '../utils';
 import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StockDividends, StockFiniHoldings, StockHistorical, StockInstitutional, StockMarginTrades, StockShortSales, StockSplits, StockValues } from '../interfaces';
 
 
@@ -301,8 +301,9 @@ export class TpexScraper extends Scraper {
     return symbol ? data.find(data => data.symbol === symbol) : data;
   }
 
-  async fetchStocksDividends(options: { startDate: string; endDate: string, symbol?: string }) {
+  async fetchStocksDividends(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
     const { startDate, endDate, symbol } = options;
+    // Note: TPEx returns complete data directly, includeDetail parameter is ignored for compatibility
     const form = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyy/MM/dd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyy/MM/dd'),
@@ -315,22 +316,21 @@ export class TpexScraper extends Scraper {
 
     const data = json.tables[0].data.map((row: string[]) => {
       const [date, symbol, name, ...values] = row;
-      const [year, month, day] = date.split('/');
       const data: Record<string, any> = {};
-      data.date = `${+year + 1911}-${month}-${day}`;
+      data.date = rocToWestern(date);
       data.exchange = Exchange.TPEx;
       data.symbol = symbol;
       data.name = name.trim();
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.dividend = numeral(values[4]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.dividend = parseNumeric(values[4]);
       data.dividendType = values[5].trim().replace('除', '');
-      data.limitUpPrice = numeral(values[6]).value();
-      data.limitDownPrice = numeral(values[7]).value();
-      data.openingReferencePrice = numeral(values[8]).value();
-      data.exdividendReferencePrice = numeral(values[9]).value();
-      data.cashDividend = numeral(values[10]).value();
-      data.stockDividendShares = numeral(values[11]).value();
+      data.limitUpPrice = parseNumeric(values[6]);
+      data.limitDownPrice = parseNumeric(values[7]);
+      data.openingReferencePrice = parseNumeric(values[8]);
+      data.exdividendReferencePrice = parseNumeric(values[9]);
+      data.cashDividend = parseNumeric(values[10]);
+      data.stockDividendShares = parseNumeric(values[11]);
 
       return data;
     }) as StockDividends[];
@@ -338,8 +338,9 @@ export class TpexScraper extends Scraper {
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
   }
 
-  async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string }) {
+  async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
     const { startDate, endDate, symbol } = options;
+    // Note: TPEx returns complete data directly, includeDetail parameter is ignored for compatibility
     const form = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyy/MM/dd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyy/MM/dd'),
@@ -358,12 +359,12 @@ export class TpexScraper extends Scraper {
       data.exchange = Exchange.TPEx;
       data.symbol = symbol;
       data.name = name.trim();
-      data.previousClose = numeral(values[0]).value();
-      data.referencePrice = numeral(values[1]).value();
-      data.limitUpPrice = numeral(values[2]).value();
-      data.limitDownPrice = numeral(values[3]).value();
-      data.openingReferencePrice = numeral(values[4]).value();
-      data.exrightReferencePrice = numeral(values[5]).value();
+      data.previousClose = parseNumeric(values[0]);
+      data.referencePrice = parseNumeric(values[1]);
+      data.limitUpPrice = parseNumeric(values[2]);
+      data.limitDownPrice = parseNumeric(values[3]);
+      data.openingReferencePrice = parseNumeric(values[4]);
+      data.exrightReferencePrice = parseNumeric(values[5]);
       data.reason = values[6].trim();
 
       if (values[7]) {
@@ -371,10 +372,9 @@ export class TpexScraper extends Scraper {
         const haltDate = $(`th:contains('停止買賣日期')`).next('td').text().trim();
         const sharesPerThousand = $(`th:contains('每壹仟股換發新股票')`).next('td').text().trim();
         const refundPerShare = $(`th:contains('每股退還股款')`).next('td').text().trim();
-        const [year, month, day] = haltDate.split('/');
-        data.haltDate = `${+year + 1911}-${month}-${day}`;
-        data.sharesPerThousand = numeral(sharesPerThousand.replace(' 股', '')).value();
-        data.refundPerShare = numeral(refundPerShare.replace(' 元/股', '')).value();
+        data.haltDate = rocToWestern(haltDate);
+        data.sharesPerThousand = parseNumeric(sharesPerThousand.replace(' 股', ''));
+        data.refundPerShare = parseNumeric(refundPerShare.replace(' 元/股', ''));
       }
 
       return data;
