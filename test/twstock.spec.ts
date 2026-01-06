@@ -52,7 +52,7 @@ jest.mock('../src/scrapers/mis-taifex-scraper', () => {
   MisTaifexScraper.prototype.fetchListedFutOpt = jest.fn((options) => {
     if (options?.type === 'F') return require('./fixtures/fetched-taifex-futures-list.json');
     if (options?.type === 'O') return require('./fixtures/fetched-taifex-options-list.json');
-    return require('./fixtures/fetched-taifex-futopt-list.json');;
+    return require('./fixtures/fetched-taifex-futopt-list.json');
   });
   MisTaifexScraper.prototype.fetchFutOptQuoteList = jest.fn();
   MisTaifexScraper.prototype.fetchFutOptQuoteDetail = jest.fn();
@@ -451,6 +451,28 @@ describe('TwStock', () => {
 
       it('should throw an error if the symbol is not found', async () => {
         await expect(() => twstock.stocks.revenue({ symbol: 'foobar', year: 2023, month: 1 })).rejects.toThrow('symbol not found');
+      });
+    });
+
+    describe('.listingApplicants()', () => {
+      it('should fetch TWSE stocks listing applicants by default', async () => {
+        await twstock.stocks.listingApplicants();
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: undefined });
+      });
+
+      it('should fetch TPEx stocks listing applicants when specified', async () => {
+        await twstock.stocks.listingApplicants({ exchange: 'TPEx' });
+        expect(TpexScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: undefined });
+      });
+
+      it('should filter by symbol', async () => {
+        await twstock.stocks.listingApplicants({ symbol: '2432' });
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: '2432', year: undefined });
+      });
+
+      it('should filter by year', async () => {
+        await twstock.stocks.listingApplicants({ year: 2023 });
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: 2023 });
       });
     });
   });

@@ -50,6 +50,7 @@
   * [.futopt.tmfRetailPosition(options)](#futopttmfretailpositionoptions)
   * [.futopt.txoPutCallRatio(options)](#futopttxoputcallratiooptions)
   * [.futopt.exchangeRates(options)](#futoptexchangeratesoptions)
+* [Manual Testing](#manual-testing)
 * [Disclaimer](#disclaimer)
 * [Changelog](#changelog)
 * [License](#license)
@@ -687,15 +688,16 @@ twstock.stocks.dividends({ startDate: '2023-01-01', endDate: '2023-01-31', symbo
 
 ### `.stocks.dividendsAnnouncement([options])`
 
-取得上市股票的除權除息預告資料。此 API 提供未來即將發生的除權除息事件。
+取得上市(櫃)股票的除權除息預告資料。此 API 提供未來即將發生的除權除息事件。
 
 * `options`: {Object}
+  * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃，預設為 `'TWSE'`)
   * `symbol` (optional): {string} 股票代號
-  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）。**注意**: TPEx 的 API 直接返回所有欄位，此參數對 TPEx 無實際作用
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `symbol`: {string} 股票代號
   * `name`: {string} 股票名稱
-  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `exchange`: {string} 市場別 (`'TWSE'` 或 `'TPEx'`)
   * `exdividendDate`: {string} 除權除息日期
   * `dividendType`: {string} 除權息類型 (`'權'`、`'息'`、`'權息'`)
   * `stockDividendRatio`: {number} 無償配股率
@@ -792,15 +794,16 @@ twstock.stocks.capitalReductions({ startDate: '2023-02-01', endDate: '2023-02-28
 
 ### `.stocks.capitalReductionAnnouncement([options])`
 
-取得上市股票的普通股減資預告資料。此 API 提供已公告但尚未執行的減資計畫。
+取得上市(櫃)股票的普通股減資預告資料。此 API 提供已公告但尚未執行的減資計畫。
 
 * `options`: {Object}
+  * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃，預設為 `'TWSE'`)
   * `symbol` (optional): {string} 股票代號
-  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）。**注意**: TPEx 的 API 直接返回所有欄位，此參數對 TPEx 無實際作用
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `symbol`: {string} 股票代號
   * `name`: {string} 股票名稱
-  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `exchange`: {string} 市場別 (`'TWSE'` 或 `'TPEx'`)
   * `haltDate`: {string} 停止買賣日期
   * `resumeDate`: {string} 恢復買賣日期
   * `reductionRatio`: {number} 減資換股率 (每股換發新股數)
@@ -879,21 +882,23 @@ twstock.stocks.splits({ startDate: '2022-07-01', endDate: '2022-07-31', exchange
 
 ### `.stocks.splitAnnouncement([options])`
 
-取得上市股票的變更股票面額預告資料。此 API 提供股票面額變更計畫（例如從 10 元面額改為 5 元）。
+取得上市(櫃)股票的變更股票面額預告資料。此 API 提供股票面額變更計畫（例如從 10 元面額改為 5 元）。
 
 * `options`: {Object}
+  * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃，預設為 `'TWSE'`)
   * `symbol` (optional): {string} 股票代號
-  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）
+  * `includeDetail` (optional): {boolean} 是否包含詳細資料（預設為 `false`）。**注意**: TPEx 的 API 直接返回所有欄位，此參數對 TPEx 無實際作用
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `symbol`: {string} 股票代號
   * `name`: {string} 股票名稱
-  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `exchange`: {string} 市場別 (`'TWSE'` 或 `'TPEx'`)
   * `haltDate`: {string} 停止買賣日期
   * `resumeDate`: {string} 恢復買賣日期
   * `splitRatio`: {number} 每股換發新股比例
   * `oldFaceValue`: {number} 舊面額 (元)
   * `newFaceValue`: {number} 新面額 (元)
-  * **當 `includeDetail=true` 時，額外包含以下欄位：**
+  * `referencePrice`: {number} 恢復買賣參考價 (TPEx 提供，TWSE 為 null)
+  * **當 `includeDetail=true` 時 (僅適用於 TWSE)，額外包含以下欄位：**
     * `sharesPerOldShare`: {number} 每股換發新股票
 
 ```js
@@ -942,18 +947,23 @@ twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', excha
 
 ### `.stocks.etfSplitAnnouncement([options])`
 
-取得上市 ETF 的分割(反分割)預告資料。此 API 提供 ETF 分割或反分割計畫。
+取得上市(櫃) ETF 的分割(反分割)預告資料。此 API 提供 ETF 分割或反分割計畫。
 
 * `options`: {Object}
+  * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃，預設為 `'TWSE'`)
   * `symbol` (optional): {string} ETF 代號
+  * `splitType` (optional): {string} 分割類型 (`'分割'` 或 `'反分割'`)。若未指定則返回所有類型
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `symbol`: {string} ETF 代號
   * `name`: {string} ETF 名稱
-  * `exchange`: {string} 市場別 (固定為 `'TWSE'`)
+  * `exchange`: {string} 市場別 (`'TWSE'` 或 `'TPEx'`)
   * `haltDate`: {string} 停止買賣日期
   * `resumeDate`: {string} 恢復買賣日期
   * `splitType`: {string} 分割類型 (`'分割'` 或 `'反分割'`)
   * `splitRatio`: {number} 分割比例 (例如: 0.5 表示 1:2 分割，2.0 表示 2:1 反分割)
+  * `previousNav`: {number} 分割前 ETF 淨值 (TPEx 提供，TWSE 為 null)
+  * `newNav`: {number} 分割後 ETF 淨值 (TPEx 提供，TWSE 為 null)
+  * `referencePrice`: {number} 恢復買賣參考價 (TPEx 提供，TWSE 為 null)
 
 ```js
 twstock.stocks.etfSplitAnnouncement({ symbol: '00901' })
@@ -1736,6 +1746,73 @@ twstock.futopt.exchangeRates({ date: '2023-01-30' })
 //   nzdusd: 0.64805
 // }
 ```
+
+## Manual Testing
+
+專案包含三個手動測試檔案，用於測試不同交易所的 Announcement APIs：
+
+### test-twse.js
+
+測試 TWSE (上市) Announcement APIs，包含：
+- 除權除息預告 (快速 & 完整模式)
+- 減資預告 (快速 & 完整模式)
+- 變更面額預告 (快速 & 完整模式)
+- ETF 分割反分割預告
+- includeDetail 效能對比測試
+
+執行方式：
+
+```sh
+npm run build && node test-twse.js
+```
+
+### test-tpex.js
+
+測試 TPEx (上櫃) Announcement APIs，包含：
+- 除權除息預告
+- 減資預告
+- 變更面額預告
+- ETF 分割預告
+- ETF 反分割預告
+
+執行方式：
+
+```sh
+npm run build && node test-tpex.js
+```
+
+**注意**：TPEx APIs 資料已完整，無 includeDetail 參數效能差異。
+
+### test-both.js
+
+TWSE & TPEx 對比測試，同時測試兩個交易所並比較結果：
+- 除權除息預告對比
+- 減資預告對比
+- 變更面額預告對比
+- ETF 分割預告對比
+- 指定股票對比測試
+
+執行方式：
+
+```sh
+npm run build && node test-both.js
+```
+
+輸出 JSON 檔案格式：
+
+```json
+{
+  "twse": [...],
+  "tpex": [...],
+  "summary": {
+    "twseCount": 10,
+    "tpexCount": 5,
+    "total": 15
+  }
+}
+```
+
+**提示**：所有測試檔預設只啟用一個測試，其他測試已註解。可依需求取消註解執行特定測試。
 
 ## Disclaimer
 

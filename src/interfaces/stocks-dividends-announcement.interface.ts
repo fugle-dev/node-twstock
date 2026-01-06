@@ -8,6 +8,10 @@ export interface StocksDividendAnnouncement {
   cashCapitalIncreaseRatio: number | null;
   subscriptionPrice: number | null;
   cashDividend: number | null;
+  // Optional financial information fields (from main API)
+  latestFinancialReportDate?: string;
+  latestNetAssetValuePerShare?: number | null;
+  latestEarningsPerShare?: number | null;
   // Optional detail fields (available when includeDetail=true)
   stockDividendShares?: number | null;
   employeeBonusShares?: number | null;

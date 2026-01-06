@@ -583,7 +583,6 @@ describe('TwseScraper', () => {
         symbol: '00913',
         name: '兆豐台灣晶圓製造',
         cashDividend: 0.46,
-        capitalIncreaseRight: null,
         stockDividendShares: 0,
         employeeBonusShares: 0,
         paidCapitalIncrease: 0,
@@ -621,6 +620,24 @@ describe('TwseScraper', () => {
       expect(data[0]).toHaveProperty('dividendType');
     });
 
+    it('should include financial information fields from main API', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+
+      // Verify financial information fields are present
+      expect(data[0]).toHaveProperty('latestFinancialReportDate');
+      expect(data[0]).toHaveProperty('latestNetAssetValuePerShare');
+      expect(data[0]).toHaveProperty('latestEarningsPerShare');
+
+      // Verify field types are correct (string or null for date, number or null for numeric fields)
+      expect(typeof data[0].latestFinancialReportDate === 'string' || data[0].latestFinancialReportDate === null).toBe(true);
+      expect(typeof data[0].latestNetAssetValuePerShare === 'number' || data[0].latestNetAssetValuePerShare === null).toBe(true);
+      expect(typeof data[0].latestEarningsPerShare === 'number' || data[0].latestEarningsPerShare === null).toBe(true);
+    });
+
     it('should fetch stocks dividends announcement for the specified stock', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
 
@@ -640,6 +657,9 @@ describe('TwseScraper', () => {
         cashCapitalIncreaseRatio: 0,
         subscriptionPrice: 0,
         cashDividend: 0.072,
+        latestFinancialReportDate: '2025-12-30',
+        latestNetAssetValuePerShare: 14.75,
+        latestEarningsPerShare: null,
       });
     });
 
@@ -873,13 +893,6 @@ describe('TwseScraper', () => {
         haltDate: '2024-02-29',
         sharesPerThousand: 720,
         refundPerShare: 0,
-        cashDividendPerShare: 0,
-        paidCapitalIncrease: 0,
-        subscriptionPrice: 0,
-        publicOffering: 0,
-        employeeSubscription: 0,
-        existingShareholderSubscription: 0,
-        sharesPerThousandSubscription: 0,
       });
     });
 
@@ -1612,6 +1625,90 @@ describe('TwseScraper', () => {
         'https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?date=20230101&selectType=MS&response=json',
       );
       expect(data).toBe(null);
+    });
+  });
+
+  describe('.fetchStocksListingApplicants()', () => {
+    it('should fetch all stocks listing applicants', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TWSE');
+      expect(data[0]).toHaveProperty('applicationDate');
+      expect(data[0]).toHaveProperty('chairman');
+      expect(data[0]).toHaveProperty('capitalAtApplication');
+    });
+
+    it('should fetch listing applicants filtered by symbol', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ symbol: '2432' });
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '2432');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '2432',
+        name: '倚天酷碁-創',
+        exchange: 'TWSE',
+        applicationDate: '2022-12-30',
+        chairman: '高樹國',
+        capitalAtApplication: 600000,
+        reviewCommitteeDate: '2023-04-17',
+        boardApprovalDate: '2023-04-25',
+        contractFilingDate: '2023-04-27',
+        listedDate: '2023-05-31',
+        underwriter: '台新',
+        underwritingPrice: 26.00,
+        remarks: '創新板',
+      });
+    });
+
+    it('should fetch listing applicants filtered by year', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ year: 2023 });
+      expect(mockAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('date=20230101'),
+      );
+      expect(data).toBeDefined();
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-listing-application-no-data.json') });
+
+      const data = await scraper.fetchStocksListingApplicants();
+      expect(mockAxios.get).toHaveBeenCalled();
+      expect(data).toEqual([]);
+    });
+
+    it('should handle applicants with pending review (empty dates)', async () => {
+      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ symbol: '4749' });
+      const result = data.find(d => d.symbol === '4749');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '4749',
+        name: '新應材',
+        exchange: 'TWSE',
+        applicationDate: '2022-08-31',
+        chairman: '詹文雄',
+        capitalAtApplication: 806439,
+        reviewCommitteeDate: null,
+        boardApprovalDate: null,
+        contractFilingDate: null,
+        listedDate: null,
+        underwriter: '富邦',
+        underwritingPrice: null,
+        remarks: '111-11-09撤件',
+      });
     });
   });
 });

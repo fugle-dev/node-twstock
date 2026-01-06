@@ -6,7 +6,7 @@ import { DateTime } from 'luxon';
 import { Scraper } from './scraper';
 import { Exchange } from '../enums';
 import { asIndex, isWarrant, rocToWestern, parseNumeric } from '../utils';
-import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StockDividends, StockFiniHoldings, StockHistorical, StockInstitutional, StockMarginTrades, StockShortSales, StockSplits, StockValues } from '../interfaces';
+import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StockDividends, StockFiniHoldings, StockHistorical, StockInstitutional, StocksListingApplication, StockMarginTrades, StockShortSales, StockSplits, StockValues, StocksDividendAnnouncement, StocksCapitalReductionAnnouncement, StocksSplitAnnouncement, StocksEtfSplitAnnouncement } from '../interfaces';
 
 
 export class TpexScraper extends Scraper {
@@ -331,6 +331,13 @@ export class TpexScraper extends Scraper {
       data.exdividendReferencePrice = parseNumeric(values[9]);
       data.cashDividend = parseNumeric(values[10]);
       data.stockDividendShares = parseNumeric(values[11]);
+      data.capitalIncreaseRight = values[2] || null;
+      data.paidCapitalIncrease = parseNumeric(values[12]);
+      data.subscriptionPrice = parseNumeric(values[13]);
+      data.publicOffering = parseNumeric(values[14]);
+      data.employeeSubscription = parseNumeric(values[15]);
+      data.existingShareholderSubscription = parseNumeric(values[16]);
+      data.sharesPerThousand = parseNumeric(values[17]);
 
       return data;
     }) as StockDividends[];
@@ -668,5 +675,259 @@ export class TpexScraper extends Scraper {
     data.marginBalancePrevValue = numeral(values[13]).value();
     data.marginBalanceValue = numeral(values[17]).value();
     return data as MarketMarginTrades;
+  }
+
+  async fetchStocksDividendsAnnouncement(options?: { symbol?: string }): Promise<StocksDividendAnnouncement[]> {
+    const { symbol: filterSymbol } = options || {};
+
+    const form = new URLSearchParams({
+      id: filterSymbol || '',
+      response: 'json',
+    });
+
+    const url = 'https://www.tpex.org.tw/www/zh-tw/bulletin/prePost';
+    const response = await this.httpService.post(url, form);
+
+    const json = (response.data.tables?.[0]?.totalCount > 0) && response.data;
+    if (!json) return [];
+
+    const data = json.tables[0].data
+      .filter((row: string[]) => !row[1].endsWith('B')) // Filter out bonds (symbols ending with 'B')
+      .map((row: string[]) => {
+        const [
+          exdividendDate,
+          symbol,
+          name,
+          dividendType,
+          stockDividendRatio,
+          cashCapitalIncreaseRatio,
+          subscriptionPrice,
+          cashDividend,
+          publicOffering,
+          employeeSubscription,
+          existingShareholderSubscription,
+          sharesPerThousand,
+        ] = row;
+
+        return {
+          symbol,
+          name: name.trim(),
+          exchange: Exchange.TPEx,
+          exdividendDate: rocToWestern(exdividendDate),
+          dividendType: dividendType.trim().replace('除', '') as '權' | '息' | '權息',
+          stockDividendRatio: parseNumeric(stockDividendRatio),
+          cashCapitalIncreaseRatio: parseNumeric(cashCapitalIncreaseRatio),
+          subscriptionPrice: parseNumeric(subscriptionPrice),
+          cashDividend: parseNumeric(cashDividend),
+          publicOffering: parseNumeric(publicOffering),
+          employeeSubscription: parseNumeric(employeeSubscription),
+          existingShareholderSubscription: parseNumeric(existingShareholderSubscription),
+          sharesPerThousand: parseNumeric(sharesPerThousand),
+        };
+      }) as StocksDividendAnnouncement[];
+
+    return filterSymbol
+      ? data.filter(d => d.symbol === filterSymbol)
+      : data;
+  }
+
+  async fetchStocksCapitalReductionAnnouncement(options?: { symbol?: string }): Promise<StocksCapitalReductionAnnouncement[]> {
+    const { symbol: filterSymbol } = options || {};
+
+    const form = new URLSearchParams({
+      id: filterSymbol || '',
+      response: 'json',
+    });
+
+    const url = 'https://www.tpex.org.tw/www/zh-tw/bulletin/decap';
+    const response = await this.httpService.post(url, form);
+
+    const json = (response.data.tables?.[0]?.totalCount > 0) && response.data;
+    if (!json) return [];
+
+    const data = json.tables[0].data.map((row: string[]) => {
+      const [
+        symbol,
+        name,
+        haltDate,
+        reductionRatio,
+        refundPerShare,
+        reason,
+        resumeDate,
+        cashIncreaseRatioAfterReduction,
+        subscriptionPrice,
+      ] = row;
+
+      return {
+        symbol,
+        name: name.trim(),
+        exchange: Exchange.TPEx,
+        haltDate: rocToWestern(haltDate),
+        resumeDate: rocToWestern(resumeDate),
+        reductionRatio: parseNumeric(reductionRatio),
+        reason: reason.trim(),
+        refundPerShare: parseNumeric(refundPerShare),
+        cashIncreaseRatioAfterReduction: cashIncreaseRatioAfterReduction === '不適用' ? null : parseNumeric(cashIncreaseRatioAfterReduction),
+        subscriptionPrice: subscriptionPrice === '不適用' ? null : parseNumeric(subscriptionPrice),
+      };
+    }) as StocksCapitalReductionAnnouncement[];
+
+    return filterSymbol
+      ? data.filter(d => d.symbol === filterSymbol)
+      : data;
+  }
+
+  async fetchStocksSplitAnnouncement(options?: { symbol?: string }): Promise<StocksSplitAnnouncement[]> {
+    const { symbol: filterSymbol } = options || {};
+
+    const form = new URLSearchParams({
+      id: filterSymbol || '',
+      response: 'json',
+    });
+
+    const url = 'https://www.tpex.org.tw/www/zh-tw/bulletin/pvChgAnn';
+    const response = await this.httpService.post(url, form);
+
+    const json = (response.data.tables?.[0]?.totalCount > 0) && response.data;
+    if (!json) return [];
+
+    const data = json.tables[0].data.map((row: string[]) => {
+      const [
+        symbol,
+        name,
+        haltDate,
+        splitRatio,
+        oldFaceValue,
+        newFaceValue,
+        resumeDate,
+      ] = row;
+
+      return {
+        symbol,
+        name: name.trim(),
+        exchange: Exchange.TPEx,
+        haltDate: rocToWestern(haltDate),
+        resumeDate: rocToWestern(resumeDate),
+        splitRatio: parseNumeric(splitRatio),
+        oldFaceValue: parseNumeric(oldFaceValue),
+        newFaceValue: parseNumeric(newFaceValue),
+      };
+    }) as StocksSplitAnnouncement[];
+
+    return filterSymbol
+      ? data.filter(d => d.symbol === filterSymbol)
+      : data;
+  }
+
+  async fetchStocksEtfSplitAnnouncement(options?: { symbol?: string }): Promise<StocksEtfSplitAnnouncement[]> {
+    return this.fetchEtfSplitAnnouncementBase('/bulletin/etfSplit', '分割', options?.symbol);
+  }
+
+  async fetchStocksEtfReverseSplitAnnouncement(options?: { symbol?: string }): Promise<StocksEtfSplitAnnouncement[]> {
+    return this.fetchEtfSplitAnnouncementBase('/bulletin/etfRvs', '反分割', options?.symbol);
+  }
+
+  private async fetchEtfSplitAnnouncementBase(
+    endpoint: string,
+    splitType: '分割' | '反分割',
+    filterSymbol?: string
+  ) {
+    const form = new URLSearchParams({
+      id: filterSymbol || '',
+      response: 'json',
+    });
+
+    const url = `https://www.tpex.org.tw/www/zh-tw${endpoint}`;
+    const response = await this.httpService.post(url, form);
+
+    const json = (response.data.tables?.[0]?.totalCount > 0) && response.data;
+    if (!json) return [];
+
+    const data = json.tables[0].data.map((row: string[]) => {
+      const [
+        symbol,
+        name,
+        haltDate,
+        splitRatio,
+        previousNav,
+        newNav,
+        resumeDate,
+      ] = row;
+
+      return {
+        symbol,
+        name: name.trim(),
+        exchange: Exchange.TPEx,
+        haltDate: rocToWestern(haltDate),
+        resumeDate: rocToWestern(resumeDate),
+        splitType,
+        splitRatio: parseNumeric(splitRatio),
+        previousNav: parseNumeric(previousNav),
+        newNav: parseNumeric(newNav),
+      };
+    }) as StocksEtfSplitAnnouncement[];
+
+    return filterSymbol
+      ? data.filter(d => d.symbol === filterSymbol)
+      : data;
+  }
+
+  async fetchStocksListingApplicants(options?: { symbol?: string, year?: number | 'ALL' }): Promise<StocksListingApplication[]> {
+    const { symbol: filterSymbol, year } = options || {};
+
+    const form = new URLSearchParams({
+      code: filterSymbol || '',
+      date: year ? (year === 'ALL' ? 'ALL' : year.toString()) : 'ALL',
+      id: '',
+      response: 'json',
+    });
+
+    const url = 'https://www.tpex.org.tw/www/zh-tw/company/applicant';
+
+    const response = await this.httpService.post(url, form, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    const json = response.data.tables?.[0]?.totalCount > 0 && response.data;
+    if (!json) return [];
+
+    const data = json.tables[0].data.map((row: string[]) => {
+      const [
+        ,  // index
+        symbol,
+        name,
+        applicationDate,
+        chairman,
+        capitalAtApplication,
+        reviewCommitteeDate,
+        boardApprovalDate,
+        contractApprovalDate,  // TPEx specific: 櫃買同意上櫃契約日期
+        listedDate,
+        underwriter,
+        underwritingPrice,
+        remarks,
+        // Ignore the last 2 fields (URL fields)
+      ] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TPEx;
+      data.applicationDate = rocToWestern(applicationDate);
+      data.chairman = chairman.trim();
+      data.capitalAtApplication = parseNumeric(capitalAtApplication);
+      data.reviewCommitteeDate = reviewCommitteeDate ? rocToWestern(reviewCommitteeDate) : null;
+      data.boardApprovalDate = boardApprovalDate ? rocToWestern(boardApprovalDate) : null;
+      data.contractApprovalDate = contractApprovalDate ? rocToWestern(contractApprovalDate) : null;
+      data.listedDate = listedDate ? rocToWestern(listedDate) : null;
+      data.underwriter = underwriter.trim() || null;
+      data.underwritingPrice = parseNumeric(underwritingPrice);
+      data.remarks = remarks.trim();
+
+      return data;
+    }) as StocksListingApplication[];
+
+    // Apply client-side filtering if needed (for additional filtering beyond server-side)
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
   }
 }

@@ -210,7 +210,7 @@ describe('TaifexScraper', () => {
     it('should fetch options historical data for the given date of regular trading', async () => {
       mockAxios.post.mockResolvedValueOnce({ data: fs.readFileSync('./test/fixtures/taifex-options-historical.csv') });
 
-      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30' }) as FutOptHistorical[];;
+      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30' }) as FutOptHistorical[];
       const url = 'https://www.taifex.com.tw/cht/3/optDataDown';
       const form = new URLSearchParams({
         down_type: '1',
@@ -248,7 +248,7 @@ describe('TaifexScraper', () => {
     it('should fetch options historical data for the given date of after-hours trading', async () => {
       mockAxios.post.mockResolvedValueOnce({ data: fs.readFileSync('./test/fixtures/taifex-options-historical.csv') });
 
-      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', afterhours: true }) as FutOptHistorical[];;
+      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', afterhours: true }) as FutOptHistorical[];
       const url = 'https://www.taifex.com.tw/cht/3/optDataDown';
       const form = new URLSearchParams({
         down_type: '1',
@@ -286,7 +286,7 @@ describe('TaifexScraper', () => {
     it('should fetch TXO historical data for the given date of regular trading', async () => {
       mockAxios.post.mockResolvedValueOnce({ data: fs.readFileSync('./test/fixtures/taifex-options-historical.csv') });
 
-      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', symbol: 'TXO' }) as FutOptHistorical[];;
+      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', symbol: 'TXO' }) as FutOptHistorical[];
       const url = 'https://www.taifex.com.tw/cht/3/optDataDown';
       const form = new URLSearchParams({
         down_type: '1',
@@ -324,7 +324,7 @@ describe('TaifexScraper', () => {
     it('should fetch TXO historical data for the given date of after-hours trading', async () => {
       mockAxios.post.mockResolvedValueOnce({ data: fs.readFileSync('./test/fixtures/taifex-options-historical.csv') });
 
-      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', symbol: 'TXO', afterhours: true }) as FutOptHistorical[];;
+      const data = await scraper.fetchOptionsHistorical({ date: '2023-01-30', symbol: 'TXO', afterhours: true }) as FutOptHistorical[];
       const url = 'https://www.taifex.com.tw/cht/3/optDataDown';
       const form = new URLSearchParams({
         down_type: '1',

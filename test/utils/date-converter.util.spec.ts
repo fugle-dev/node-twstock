@@ -22,6 +22,12 @@ describe('rocToWestern()', () => {
     expect(rocToWestern('113/6/5')).toBe('2024-06-05');
   });
 
+  it('should convert ROC date in compact format (YYYMMDD)', () => {
+    expect(rocToWestern('1141231')).toBe('2025-12-31');
+    expect(rocToWestern('1150112')).toBe('2026-01-12');
+    expect(rocToWestern('1130605')).toBe('2024-06-05');
+  });
+
   it('should return original string if format not recognized', () => {
     expect(rocToWestern('2025-01-02')).toBe('2025-01-02');
     expect(rocToWestern('invalid date')).toBe('invalid date');

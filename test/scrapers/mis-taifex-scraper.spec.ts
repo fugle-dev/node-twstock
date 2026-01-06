@@ -137,7 +137,7 @@ describe('MisTaifexScraper', () => {
       const data = await scraper.fetchFutOptQuoteList({
         ticker: { symbol: 'TXO', type: 'O' } as Ticker,
         afterhours: true,
-      }) as FutOptQuote[];;
+      }) as FutOptQuote[];
       expect(mockAxios.post).toHaveBeenCalledWith(
         'https://mis.taifex.com.tw/futures/api/getQuoteList',
         JSON.stringify({

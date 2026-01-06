@@ -15,6 +15,7 @@ export * from './stocks-capital-reduction-announcement.interface';
 export * from './stock-splits.interface';
 export * from './stocks-split-announcement.interface';
 export * from './stocks-etf-split-announcement.interface';
+export * from './stocks-listing-application.interface';
 export * from './stock-eps.interface';
 export * from './stock-revenue.interface';
 export * from './stock-shareholders.interface';

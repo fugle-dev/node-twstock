@@ -33,6 +33,14 @@ export function rocToWestern(rocDate: string): string {
     return `${westernYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
+  // Format: "1141231" (YYYMMDD - 3-digit year + 2-digit month + 2-digit day)
+  const compactMatch = rocDate.match(/^(\d{3})(\d{2})(\d{2})$/);
+  if (compactMatch) {
+    const [, year, month, day] = compactMatch;
+    const westernYear = parseInt(year) + 1911;
+    return `${westernYear}-${month}-${day}`;
+  }
+
   // Return original if format not recognized
   return rocDate;
 }

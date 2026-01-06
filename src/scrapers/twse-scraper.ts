@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import { Scraper } from './scraper';
 import { Exchange, Index } from '../enums';
 import { asIndex, rocToWestern, parseNumeric, stripHtmlTags, parseFinancialReportDate } from '../utils';
-import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StocksCapitalReductionAnnouncement, StockDividends, StocksDividendAnnouncement, StocksEtfSplitAnnouncement, StockFiniHoldings, StockHistorical, StockInstitutional, StockMarginTrades, StockShortSales, StockSplits, StocksSplitAnnouncement, StockValues } from '../interfaces';
+import { IndexHistorical, IndexTrades, MarketBreadth, MarketInstitutional, MarketMarginTrades, MarketTrades, StockCapitalReductions, StocksCapitalReductionAnnouncement, StockDividends, StocksDividendAnnouncement, StocksEtfSplitAnnouncement, StockFiniHoldings, StockHistorical, StockInstitutional, StocksListingApplication, StockMarginTrades, StockShortSales, StockSplits, StocksSplitAnnouncement, StockValues } from '../interfaces';
 
 export class TwseScraper extends Scraper {
   async fetchStocksHistorical(options: { date: string, symbol?: string }) {
@@ -382,7 +382,6 @@ export class TwseScraper extends Scraper {
     data.symbol = symbol;
     data.name = name.trim();
     data.cashDividend = parseNumeric(values[0]);
-    data.capitalIncreaseRight = values[1] || null;
     data.stockDividendShares = parseNumeric(values[2]);
     data.employeeBonusShares = parseNumeric(values[3]);
     data.paidCapitalIncrease = parseNumeric(values[4]);
@@ -408,7 +407,21 @@ export class TwseScraper extends Scraper {
     if (!json || !json.data) return [];
 
     const data = await Promise.all(json.data.map(async (row: string[]) => {
-      const [date, symbol, name, dividendType, stockDividendRatio, cashCapitalIncreaseRatio, subscriptionPrice, cashDividend] = row;
+      const [
+        date,
+        symbol,
+        name,
+        dividendType,
+        stockDividendRatio,
+        cashCapitalIncreaseRatio,
+        subscriptionPrice,
+        cashDividend,
+        ,  // Skip field 8: detail reference
+        ,  // Skip field 9: reference price calculation
+        latestFinancialReportDate,
+        latestNetAssetValuePerShare,
+        latestEarningsPerShare,
+      ] = row;
 
       const data: Record<string, any> = {};
       data.symbol = symbol.trim();
@@ -420,6 +433,11 @@ export class TwseScraper extends Scraper {
       data.cashCapitalIncreaseRatio = parseNumeric(cashCapitalIncreaseRatio);
       data.subscriptionPrice = parseNumeric(stripHtmlTags(subscriptionPrice));
       data.cashDividend = parseNumeric(stripHtmlTags(cashDividend));
+
+      // Add financial information fields from main API
+      data.latestFinancialReportDate = parseFinancialReportDate(latestFinancialReportDate);
+      data.latestNetAssetValuePerShare = parseNumeric(latestNetAssetValuePerShare);
+      data.latestEarningsPerShare = parseNumeric(latestEarningsPerShare);
 
       // Include detail API call if requested (default: false for announcements)
       if (includeDetail) {
@@ -443,7 +461,8 @@ export class TwseScraper extends Scraper {
   }
 
   async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
-    const { startDate, endDate, symbol, includeDetail = true } = options;
+    const { startDate, endDate, symbol } = options;
+    // Note: Always fetch detail for consistency with TPEx, includeDetail parameter is ignored
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -471,20 +490,15 @@ export class TwseScraper extends Scraper {
       data.exrightReferencePrice = parseNumeric(values[5]);
       data.reason = values[6].trim();
 
-      // Include detail API call if requested (default: true for backward compatibility)
-      if (includeDetail) {
-        try {
-          const [, detailDate] = values[7].split(',');
-          const detail = await this.fetchStockCapitalReductionDetail({ symbol, date: detailDate });
-          return { ...data, ...detail };
-        } catch (error) {
-          // If detail fetch fails, return main data without detail
-          console.warn(`Failed to fetch capital reduction detail for ${symbol}:`, error);
-          return data;
-        }
+      try {
+        const [, detailDate] = values[7].split(',');
+        const detail = await this.fetchStockCapitalReductionDetail({ symbol, date: detailDate });
+        return { ...data, ...detail };
+      } catch (error) {
+        // If detail fetch fails, return main data without detail
+        console.warn(`Failed to fetch capital reduction detail for ${symbol}:`, error);
+        return data;
       }
-
-      return data;
     }) as StockCapitalReductions[]);
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
@@ -512,13 +526,6 @@ export class TwseScraper extends Scraper {
     data.haltDate = rocToWestern(values[0]);
     data.sharesPerThousand = parseNumeric(values[1]);
     data.refundPerShare = parseNumeric(values[2]);
-    data.cashDividendPerShare = parseNumeric(values[3]);
-    data.paidCapitalIncrease = parseNumeric(values[4]);
-    data.subscriptionPrice = parseNumeric(values[5]);
-    data.publicOffering = parseNumeric(values[6]);
-    data.employeeSubscription = parseNumeric(values[7]);
-    data.existingShareholderSubscription = parseNumeric(values[8]);
-    data.sharesPerThousandSubscription = parseNumeric(values[9]);
 
     return data;
   }
@@ -811,6 +818,63 @@ export class TwseScraper extends Scraper {
     }) as StocksEtfSplitAnnouncement[];
 
     return options?.symbol ? data.filter((item) => item.symbol === options.symbol) : data;
+  }
+
+  async fetchStocksListingApplicants(options?: { symbol?: string, year?: number }): Promise<StocksListingApplication[]> {
+    const { symbol: filterSymbol, year } = options || {};
+
+    const query: Record<string, string> = {
+      response: 'json',
+      _: Date.now().toString(),
+    };
+
+    if (year) {
+      query.date = `${year}0101`;
+    }
+
+    const queryParams = new URLSearchParams(query);
+    const url = `https://www.twse.com.tw/rwd/zh/company/applylisting?${queryParams}`;
+
+    const response = await this.httpService.get(url);
+    const json = response.data?.stat === 'ok' && response.data;
+    if (!json || !json.data) return [];
+
+    const data = json.data.map((row: string[]) => {
+      const [
+        ,  // index
+        symbol,
+        name,
+        applicationDate,
+        chairman,
+        capitalAtApplication,
+        reviewCommitteeDate,
+        boardApprovalDate,
+        contractFilingDate,
+        listedDate,
+        underwriter,
+        underwritingPrice,
+        remarks,
+      ] = row;
+
+      const data: Record<string, any> = {};
+      data.symbol = symbol.trim();
+      data.name = name.trim();
+      data.exchange = Exchange.TWSE;
+      data.applicationDate = rocToWestern(applicationDate);
+      data.chairman = chairman.trim();
+      data.capitalAtApplication = parseNumeric(capitalAtApplication);
+      data.reviewCommitteeDate = reviewCommitteeDate ? rocToWestern(reviewCommitteeDate) : null;
+      data.boardApprovalDate = boardApprovalDate ? rocToWestern(boardApprovalDate) : null;
+      data.contractFilingDate = contractFilingDate ? rocToWestern(contractFilingDate) : null;
+      data.listedDate = listedDate ? rocToWestern(listedDate) : null;
+      data.underwriter = underwriter.trim() || null;
+      data.underwritingPrice = parseNumeric(stripHtmlTags(underwritingPrice));
+      data.remarks = remarks.trim();
+
+      return data;
+    }) as StocksListingApplication[];
+
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
   }
 
   async fetchIndicesHistorical(options: { date: string, symbol?: string }) {

@@ -6,4 +6,6 @@ export interface StocksEtfSplitAnnouncement {
   resumeDate: string;
   splitType: '分割' | '反分割';
   splitRatio: number | null;
+  previousNav?: number | null;
+  newNav?: number | null;
 }

@@ -34,6 +34,7 @@ export class TwStock {
       splitAnnouncement: this.fetchStocksSplitAnnouncement.bind(this),
       etfSplits: this.fetchStocksEtfSplits.bind(this),
       etfSplitAnnouncement: this.fetchStocksEtfSplitAnnouncement.bind(this),
+      listingApplicants: this.fetchStocksListingApplicants.bind(this),
     };
   }
 
@@ -236,20 +237,46 @@ export class TwStock {
       : await this._scraper.getTwseScraper().fetchStocksEtfSplits({ symbol, startDate, endDate, reverseSplit });
   }
 
-  private async fetchStocksDividendsAnnouncement(options?: { symbol?: string }) {
-    return await this._scraper.getTwseScraper().fetchStocksDividendsAnnouncement(options);
+  private async fetchStocksDividendsAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, includeDetail?: boolean }) {
+    const { exchange = Exchange.TWSE, symbol, includeDetail } = options || {};
+    return (exchange === Exchange.TPEx)
+      ? await this._scraper.getTpexScraper().fetchStocksDividendsAnnouncement({ symbol })
+      : await this._scraper.getTwseScraper().fetchStocksDividendsAnnouncement({ symbol, includeDetail });
   }
 
-  private async fetchStocksCapitalReductionAnnouncement(options?: { symbol?: string }) {
-    return await this._scraper.getTwseScraper().fetchStocksCapitalReductionAnnouncement(options);
+  private async fetchStocksCapitalReductionAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, includeDetail?: boolean }) {
+    const { exchange = Exchange.TWSE, symbol, includeDetail } = options || {};
+    return (exchange === Exchange.TPEx)
+      ? await this._scraper.getTpexScraper().fetchStocksCapitalReductionAnnouncement({ symbol })
+      : await this._scraper.getTwseScraper().fetchStocksCapitalReductionAnnouncement({ symbol, includeDetail });
   }
 
-  private async fetchStocksSplitAnnouncement(options?: { symbol?: string }) {
-    return await this._scraper.getTwseScraper().fetchStocksSplitAnnouncement(options);
+  private async fetchStocksSplitAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, includeDetail?: boolean }) {
+    const { exchange = Exchange.TWSE, symbol, includeDetail } = options || {};
+    return (exchange === Exchange.TPEx)
+      ? await this._scraper.getTpexScraper().fetchStocksSplitAnnouncement({ symbol })
+      : await this._scraper.getTwseScraper().fetchStocksSplitAnnouncement({ symbol, includeDetail });
   }
 
-  private async fetchStocksEtfSplitAnnouncement(options?: { symbol?: string }) {
-    return await this._scraper.getTwseScraper().fetchStocksEtfSplitAnnouncement(options);
+  private async fetchStocksEtfSplitAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, splitType?: '分割' | '反分割' }) {
+    const { exchange = Exchange.TWSE, symbol, splitType } = options || {};
+
+    if (exchange === Exchange.TPEx) {
+      // TPEx has separate endpoints for split and reverse split
+      const data = splitType === '反分割'
+        ? await this._scraper.getTpexScraper().fetchStocksEtfReverseSplitAnnouncement({ symbol })
+        : splitType === '分割'
+        ? await this._scraper.getTpexScraper().fetchStocksEtfSplitAnnouncement({ symbol })
+        : [
+            ...await this._scraper.getTpexScraper().fetchStocksEtfSplitAnnouncement({ symbol }),
+            ...await this._scraper.getTpexScraper().fetchStocksEtfReverseSplitAnnouncement({ symbol })
+          ];
+      return data;
+    }
+
+    // TWSE returns all split types in one call, filter by splitType if specified
+    const data = await this._scraper.getTwseScraper().fetchStocksEtfSplitAnnouncement({ symbol });
+    return splitType ? data.filter(item => item.splitType === splitType) : data;
   }
 
   private async fetchStocksCapitalReductions(options: { exchange?: 'TWSE' | 'TPEx', startDate: string, endDate: string, symbol?: string, includeDetail?: boolean }) {
@@ -266,6 +293,21 @@ export class TwStock {
     return (exchange === Exchange.TPEx)
       ? await this._scraper.getTpexScraper().fetchStocksCapitalReductions({ symbol, startDate, endDate, includeDetail })
       : await this._scraper.getTwseScraper().fetchStocksCapitalReductions({ symbol, startDate, endDate, includeDetail });
+  }
+
+  private async fetchStocksListingApplicants(options?: {
+    exchange?: 'TWSE' | 'TPEx',
+    symbol?: string,
+    year?: number | 'ALL'
+  }) {
+    const { exchange = Exchange.TWSE, symbol, year } = options || {};
+
+    return (exchange === Exchange.TPEx)
+      ? await this._scraper.getTpexScraper().fetchStocksListingApplicants({ symbol, year })
+      : await this._scraper.getTwseScraper().fetchStocksListingApplicants({
+          symbol,
+          year: year === 'ALL' ? undefined : year as number | undefined
+        });
   }
 
   private async fetchStocksDividends(options: { startDate: string, endDate: string, exchange?: 'TWSE' | 'TPEx', symbol?: string, includeDetail?: boolean }) {

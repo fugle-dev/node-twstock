@@ -423,6 +423,13 @@ describe('TpexScraper', () => {
           exdividendReferencePrice: 62.84,
           cashDividend: 2.86203464,
           stockDividendShares: 0,
+          capitalIncreaseRight: '0.000000',
+          paidCapitalIncrease: 0,
+          subscriptionPrice: 0,
+          publicOffering: 0,
+          employeeSubscription: 0,
+          existingShareholderSubscription: 0,
+          sharesPerThousand: 0,
         },
         {
           date: '2024-03-22',
@@ -439,6 +446,13 @@ describe('TpexScraper', () => {
           exdividendReferencePrice: 157.5,
           cashDividend: 9,
           stockDividendShares: 0,
+          capitalIncreaseRight: '0.000000',
+          paidCapitalIncrease: 0,
+          subscriptionPrice: 0,
+          publicOffering: 0,
+          employeeSubscription: 0,
+          existingShareholderSubscription: 0,
+          sharesPerThousand: 0,
         },
         {
           date: '2024-03-22',
@@ -455,6 +469,13 @@ describe('TpexScraper', () => {
           exdividendReferencePrice: 101.3,
           cashDividend: 2.2,
           stockDividendShares: 0,
+          capitalIncreaseRight: '0.000000',
+          paidCapitalIncrease: 0,
+          subscriptionPrice: 0,
+          publicOffering: 0,
+          employeeSubscription: 0,
+          existingShareholderSubscription: 0,
+          sharesPerThousand: 0,
         },
       ]);
     });
@@ -483,6 +504,13 @@ describe('TpexScraper', () => {
         exdividendReferencePrice: 157.5,
         cashDividend: 9,
         stockDividendShares: 0,
+        capitalIncreaseRight: '0.000000',
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousand: 0,
       }]);
     });
 
@@ -1027,6 +1055,253 @@ describe('TpexScraper', () => {
         'https://www.tpex.org.tw/www/zh-tw/margin/balance?date=2023%2F01%2F01&response=json',
       );
       expect(data).toBe(null);
+    });
+  });
+
+  describe('.fetchStocksDividendsAnnouncement()', () => {
+    it('should fetch stocks dividends announcement', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-dividends-announcement.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement();
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        'https://www.tpex.org.tw/www/zh-tw/bulletin/prePost',
+        new URLSearchParams({ id: '', response: 'json' }),
+      );
+      expect(data).toBeDefined();
+      expect(data.length).toBe(5);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('exdividendDate');
+      expect(data[0]).toHaveProperty('dividendType');
+    });
+
+    it('should filter stocks dividends announcement by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-dividends-announcement.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement({ symbol: '5278' });
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '5278');
+      expect(result).toBeDefined();
+      expect(result?.name).toBe('尚凡*');
+    });
+
+    it('should return empty array when no data', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-dividends-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksDividendsAnnouncement();
+      expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksCapitalReductionAnnouncement()', () => {
+    it('should fetch stocks capital reduction announcement', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-capital-reduction-announcement.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement();
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        'https://www.tpex.org.tw/www/zh-tw/bulletin/decap',
+        new URLSearchParams({ id: '', response: 'json' }),
+      );
+      expect(data).toBeDefined();
+      expect(data.length).toBe(1);
+      expect(data[0]).toHaveProperty('symbol', '8093');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('haltDate');
+      expect(data[0]).toHaveProperty('resumeDate');
+      expect(data[0]).toHaveProperty('reason');
+    });
+
+    it('should filter stocks capital reduction announcement by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-capital-reduction-announcement.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement({ symbol: '8093' });
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBe(1);
+      expect(data[0].symbol).toBe('8093');
+    });
+
+    it('should return empty array when no data', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-capital-reduction-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksCapitalReductionAnnouncement();
+      expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksSplitAnnouncement()', () => {
+    it('should fetch stocks split announcement', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-split-announcement.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement();
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        'https://www.tpex.org.tw/www/zh-tw/bulletin/pvChgAnn',
+        new URLSearchParams({ id: '', response: 'json' }),
+      );
+      expect(data).toBeDefined();
+      expect(data.length).toBe(1);
+      expect(data[0]).toHaveProperty('symbol', '1234');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('haltDate');
+      expect(data[0]).toHaveProperty('resumeDate');
+      expect(data[0]).toHaveProperty('splitRatio');
+    });
+
+    it('should filter stocks split announcement by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-split-announcement.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement({ symbol: '1234' });
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBe(1);
+      expect(data[0].symbol).toBe('1234');
+    });
+
+    it('should return empty array when no data', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-split-announcement-no-data.json') });
+
+      const data = await scraper.fetchStocksSplitAnnouncement();
+      expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksEtfSplitAnnouncement()', () => {
+    it('should fetch stocks ETF split announcement', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-etf-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement();
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        'https://www.tpex.org.tw/www/zh-tw/bulletin/etfSplit',
+        new URLSearchParams({ id: '', response: 'json' }),
+      );
+      expect(data).toBeDefined();
+      expect(data.length).toBe(1);
+      expect(data[0]).toHaveProperty('symbol', '00900');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('splitType', '分割');
+      expect(data[0]).toHaveProperty('previousNav');
+      expect(data[0]).toHaveProperty('newNav');
+    });
+
+    it('should filter stocks ETF split announcement by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-etf-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement({ symbol: '00900' });
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBe(1);
+      expect(data[0].symbol).toBe('00900');
+    });
+
+    it('should return empty array when no data', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: { tables: [{ totalCount: 0 }] } });
+
+      const data = await scraper.fetchStocksEtfSplitAnnouncement();
+      expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksEtfReverseSplitAnnouncement()', () => {
+    it('should fetch stocks ETF reverse split announcement', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-etf-reverse-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfReverseSplitAnnouncement();
+      expect(mockAxios.post).toHaveBeenCalledWith(
+        'https://www.tpex.org.tw/www/zh-tw/bulletin/etfRvs',
+        new URLSearchParams({ id: '', response: 'json' }),
+      );
+      expect(data).toBeDefined();
+      expect(data.length).toBe(1);
+      expect(data[0]).toHaveProperty('symbol', '00901');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('splitType', '反分割');
+      expect(data[0]).toHaveProperty('previousNav');
+      expect(data[0]).toHaveProperty('newNav');
+    });
+
+    it('should filter stocks ETF reverse split announcement by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-etf-reverse-split-announcement.json') });
+
+      const data = await scraper.fetchStocksEtfReverseSplitAnnouncement({ symbol: '00901' });
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBe(1);
+      expect(data[0].symbol).toBe('00901');
+    });
+
+    it('should return empty array when no data', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: { tables: [{ totalCount: 0 }] } });
+
+      const data = await scraper.fetchStocksEtfReverseSplitAnnouncement();
+      expect(data).toEqual([]);
+    });
+  });
+
+  describe('.fetchStocksListingApplicants()', () => {
+    it('should fetch all stocks listing applicants', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants();
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('symbol');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('exchange', 'TPEx');
+      expect(data[0]).toHaveProperty('applicationDate');
+      expect(data[0]).toHaveProperty('chairman');
+      expect(data[0]).toHaveProperty('capitalAtApplication');
+    });
+
+    it('should fetch listing applicants filtered by symbol', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ symbol: '6546' });
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
+      const result = data.find(d => d.symbol === '6546');
+      expect(result).toBeDefined();
+      expect(result).toEqual({
+        symbol: '6546',
+        name: '正基',
+        exchange: 'TPEx',
+        applicationDate: '2021-12-30',
+        chairman: '陳明哲',
+        capitalAtApplication: 602329370,
+        reviewCommitteeDate: '2022-02-17',
+        boardApprovalDate: '2022-02-25',
+        contractApprovalDate: '2022-03-04',
+        listedDate: '2022-05-24',
+        underwriter: '凱基',
+        underwritingPrice: 96,
+        remarks: '',
+      });
+    });
+
+    it('should fetch listing applicants filtered by year', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ year: 2022 });
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(data).toBeDefined();
+    });
+
+    it('should fetch all years when year is "ALL"', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-listing-application.json') });
+
+      const data = await scraper.fetchStocksListingApplicants({ year: 'ALL' });
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(data).toBeDefined();
+    });
+
+    it('should return empty array when no data is available', async () => {
+      mockAxios.post.mockResolvedValueOnce({ data: require('../fixtures/tpex-stocks-listing-application-no-data.json') });
+
+      const data = await scraper.fetchStocksListingApplicants();
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(data).toEqual([]);
     });
   });
 });
