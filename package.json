@@ -1,6 +1,6 @@
 {
-  "name": "node-twstock",
-  "version": "2.2.0",
+  "name": "@fugle/node-twstock",
+  "version": "2.2.1-alpha.0",
   "description": "A client library for scraping Taiwan stock market data",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chunkai1312/node-twstock.git"
+    "url": "git+https://github.com/fugle-dev/node-twstock.git"
   },
   "keywords": [
     "node-twstock",
