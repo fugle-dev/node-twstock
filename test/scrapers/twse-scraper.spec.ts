@@ -444,7 +444,7 @@ describe('TwseScraper', () => {
           name: '兆豐台灣晶圓製造',
         });
 
-      const data = await scraper.fetchStocksDividends({ startDate: '2024-03-04', endDate: '2024-03-05' });
+      const data = await scraper.fetchStocksDividends({ startDate: '2024-03-04', endDate: '2024-03-05', includeDetail: true });
       expect(mockAxios.get).toHaveBeenCalledWith(
         'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20240304&endDate=20240305&response=json',
       );
@@ -509,7 +509,7 @@ describe('TwseScraper', () => {
           name: '兆豐台灣晶圓製造',
         });
 
-      const data = await scraper.fetchStocksDividends({ startDate: '2024-03-04', endDate: '2024-03-05', symbol: '00913' });
+      const data = await scraper.fetchStocksDividends({ startDate: '2024-03-04', endDate: '2024-03-05', symbol: '00913', includeDetail: true });
       expect(mockAxios.get).toHaveBeenCalledWith(
         'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20240304&endDate=20240305&response=json',
       );
@@ -737,7 +737,7 @@ describe('TwseScraper', () => {
           refundPerShare: 1.443336,
         });
 
-      const data = await scraper.fetchStocksCapitalReductions({ startDate: '2024-01-01', endDate: '2024-06-28' });
+      const data = await scraper.fetchStocksCapitalReductions({ startDate: '2024-01-01', endDate: '2024-06-28', includeDetail: true });
       expect(mockAxios.get).toHaveBeenCalledWith(
         'https://www.twse.com.tw/rwd/zh/reducation/TWTAUU?startDate=20240101&endDate=20240628&response=json',
       );
@@ -796,7 +796,7 @@ describe('TwseScraper', () => {
 
     it('should fetch stocks capital reducations for the specified stock on the given date', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reductions.json') });
-      const args = { startDate: '2024-01-01', endDate: '2024-06-28', symbol: '2911' }
+      const args = { startDate: '2024-01-01', endDate: '2024-06-28', symbol: '2911', includeDetail: true }
 
       scraper.fetchStockCapitalReductionDetail = jest
         .fn()

@@ -310,7 +310,7 @@ export class TwseScraper extends Scraper {
   }
 
   async fetchStocksDividends(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
-    const { startDate, endDate, symbol, includeDetail = true } = options;
+    const { startDate, endDate, symbol, includeDetail = false } = options;
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -461,8 +461,8 @@ export class TwseScraper extends Scraper {
   }
 
   async fetchStocksCapitalReductions(options: { startDate: string; endDate: string, symbol?: string, includeDetail?: boolean }) {
-    const { startDate, endDate, symbol } = options;
-    // Note: Always fetch detail for consistency with TPEx, includeDetail parameter is ignored
+    const { startDate, endDate, symbol, includeDetail = false } = options;
+    // Note: Default false for performance, set true to include detail fields
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -490,15 +490,19 @@ export class TwseScraper extends Scraper {
       data.exrightReferencePrice = parseNumeric(values[5]);
       data.reason = values[6].trim();
 
-      try {
-        const [, detailDate] = values[7].split(',');
-        const detail = await this.fetchStockCapitalReductionDetail({ symbol, date: detailDate });
-        return { ...data, ...detail };
-      } catch (error) {
-        // If detail fetch fails, return main data without detail
-        console.warn(`Failed to fetch capital reduction detail for ${symbol}:`, error);
-        return data;
+      if (includeDetail) {
+        try {
+          const [, detailDate] = values[7].split(',');
+          const detail = await this.fetchStockCapitalReductionDetail({ symbol, date: detailDate });
+          return { ...data, ...detail };
+        } catch (error) {
+          // If detail fetch fails, return main data without detail
+          console.warn(`Failed to fetch capital reduction detail for ${symbol}:`, error);
+          return data;
+        }
       }
+
+      return data;
     }) as StockCapitalReductions[]);
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
