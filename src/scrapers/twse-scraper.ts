@@ -374,7 +374,7 @@ export class TwseScraper extends Scraper {
 
     const response = await this.httpService.get(url);
     const json = response.data.stat === 'ok' && response.data;
-    if (!json) return null;
+    if (!json || !json.data || !json.data.length) return null;
 
     const [, name, ...values] = json.data[0];
 
@@ -519,7 +519,7 @@ export class TwseScraper extends Scraper {
 
     const response = await this.httpService.get(url);
     const json = response.data.stat === 'OK' && response.data;
-    if (!json) return null;
+    if (!json || !json.data || !json.data.length) return null;
 
     const [, name, ...values] = json.data[0];
 
@@ -552,7 +552,7 @@ export class TwseScraper extends Scraper {
 
     const response = await this.httpService.get(url);
     const json = response.data.stat === 'OK' && response.data;
-    if (!json) return null;
+    if (!json || !json.data || !json.data.length) return null;
 
     const [, name, ...values] = json.data[0];
 
@@ -706,7 +706,18 @@ export class TwseScraper extends Scraper {
     if (!json || !json.data) return [];
 
     const data = await Promise.all(json.data.map(async (row: string[]) => {
-      const [haltDate, symbol, name, resumeDate, splitRatio, oldFaceValue, newFaceValue] = row;
+      const [
+        haltDate,
+        symbol,
+        name,
+        resumeDate,
+        splitRatio,
+        oldFaceValue,
+        newFaceValue,
+        detailField1,    // row[7]: "7780  ,20251230"
+        detailField2,    // row[8]: "7780  ,20260109,20260119"
+        detailField3     // row[9]: ",10.00,1.00"
+      ] = row;
 
       const data: Record<string, any> = {};
       data.symbol = symbol.trim();
@@ -718,12 +729,26 @@ export class TwseScraper extends Scraper {
       data.oldFaceValue = parseNumeric(oldFaceValue);
       data.newFaceValue = parseNumeric(newFaceValue);
 
+      // Extract detail query date from detailField1 (format: "symbol,date")
+      // Example: "7780  ,20251230" → extract "20251230"
+      let detailQueryDate: string | undefined;
+      if (detailField1) {
+        const parts = detailField1.split(',');
+        if (parts.length >= 2) {
+          const dateStr = parts[1].trim();
+          if (dateStr && dateStr.length === 8) {
+            // Convert YYYYMMDD to YYYY-MM-DD
+            detailQueryDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+          }
+        }
+      }
+
       // Include detail API call if requested (default: false for announcements)
-      if (includeDetail) {
+      if (includeDetail && detailQueryDate) {
         try {
           const detail = await this.fetchStocksSplitAnnouncementDetail({
             symbol: data.symbol,
-            date: data.haltDate
+            date: detailQueryDate
           });
           return { ...data, ...detail };
         } catch (error) {
