@@ -442,7 +442,7 @@ export class TwseScraper extends Scraper {
       // Include detail API call if requested (default: false for announcements)
       if (includeDetail) {
         try {
-          const detail = await this.fetchStocksDividendsAnnouncementDetail({
+          const detail = await this.fetchStocksDividendsDetail({
             symbol: data.symbol,
             date: data.exdividendDate
           });
@@ -526,62 +526,6 @@ export class TwseScraper extends Scraper {
     data.haltDate = rocToWestern(values[0]);
     data.sharesPerThousand = parseNumeric(values[1]);
     data.refundPerShare = parseNumeric(values[2]);
-
-    return data;
-  }
-
-  async fetchStocksDividendsAnnouncementDetail(options: { date: string, symbol: string }) {
-    const { date, symbol } = options;
-    const query = new URLSearchParams({
-      STK_NO: symbol,
-      T1: DateTime.fromISO(date).toFormat('yyyyMMdd'),
-      response: 'json',
-    });
-    const url = `https://www.twse.com.tw/rwd/zh/exRight/TWT49UDetail?${query}`;
-
-    const response = await this.httpService.get(url);
-    const json = response.data.stat === 'ok' && response.data;
-    if (!json) return null;
-
-    const [, name, ...values] = json.data[0];
-
-    const data: Record<string, any> = {};
-    data.symbol = symbol;
-    data.name = name.trim();
-    data.cashDividend = parseNumeric(values[0]);
-    data.stockDividendShares = parseNumeric(values[2]);
-    data.employeeBonusShares = parseNumeric(values[3]);
-    data.paidCapitalIncrease = parseNumeric(values[4]);
-    data.subscriptionPrice = parseNumeric(values[5]);
-    data.publicOffering = parseNumeric(values[6]);
-    data.employeeSubscription = parseNumeric(values[7]);
-    data.existingShareholderSubscription = parseNumeric(values[8]);
-    data.sharesPerThousand = parseNumeric(values[9]);
-
-    return data;
-  }
-
-  async fetchStocksCapitalReductionAnnouncementDetail(options: { symbol: string, date: string }) {
-    const { date, symbol } = options;
-    const query = new URLSearchParams({
-      STK_NO: symbol,
-      FILE_DATE: DateTime.fromISO(date).toFormat('yyyyMMdd'),
-      response: 'json',
-    });
-    const url = `https://www.twse.com.tw/rwd/zh/reducation/TWTAVUDetail?${query}`;
-
-    const response = await this.httpService.get(url);
-    const json = response.data.stat === 'OK' && response.data;
-    if (!json) return null;
-
-    const [, name, ...values] = json.data[0];
-
-    const data: Record<string, any> = {};
-    data.symbol = symbol;
-    data.name = name.trim();
-    data.haltDate = rocToWestern(values[0]);
-    data.sharesPerThousand = parseNumeric(values[1]);
-    data.refundPerShare = parseNumeric(values[2]);
     data.cashDividendPerShare = parseNumeric(values[3]);
     data.paidCapitalIncrease = parseNumeric(values[4]);
     data.subscriptionPrice = parseNumeric(values[5]);
@@ -649,7 +593,7 @@ export class TwseScraper extends Scraper {
       // Include detail API call if requested (default: false for announcements)
       if (includeDetail) {
         try {
-          const detail = await this.fetchStocksCapitalReductionAnnouncementDetail({
+          const detail = await this.fetchStockCapitalReductionDetail({
             symbol: data.symbol,
             date: data.haltDate
           });

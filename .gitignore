@@ -4,3 +4,15 @@ coverage
 .idea
 .vscode
 .DS_Store
+.npmrc
+
+# Temporary test files
+temp/
+test-both*.json
+
+# Tool configurations
+.claude/
+.serena/
+
+# Package manager
+pnpm-lock.yaml

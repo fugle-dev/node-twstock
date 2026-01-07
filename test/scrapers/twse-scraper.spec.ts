@@ -674,7 +674,7 @@ describe('TwseScraper', () => {
     it('should fetch stocks dividends announcement with detail when includeDetail is true', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
 
-      scraper.fetchStocksDividendsAnnouncementDetail = jest.fn().mockResolvedValue({
+      scraper.fetchStocksDividendsDetail = jest.fn().mockResolvedValue({
         symbol: '00939',
         name: '統一台灣高息動能',
         cashDividend: 0.072,
@@ -690,7 +690,7 @@ describe('TwseScraper', () => {
 
       const data = await scraper.fetchStocksDividendsAnnouncement({ includeDetail: true });
       expect(mockAxios.get).toHaveBeenCalled();
-      expect(scraper.fetchStocksDividendsAnnouncementDetail).toHaveBeenCalled();
+      expect(scraper.fetchStocksDividendsDetail).toHaveBeenCalled();
       expect(data).toBeDefined();
       expect(data.length).toBeGreaterThan(0);
       expect(data[0]).toHaveProperty('stockDividendShares');
@@ -700,34 +700,12 @@ describe('TwseScraper', () => {
     it('should not fetch detail when includeDetail is false', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement.json') });
 
-      scraper.fetchStocksDividendsAnnouncementDetail = jest.fn();
+      scraper.fetchStocksDividendsDetail = jest.fn();
 
       const data = await scraper.fetchStocksDividendsAnnouncement({ includeDetail: false });
       expect(mockAxios.get).toHaveBeenCalled();
-      expect(scraper.fetchStocksDividendsAnnouncementDetail).not.toHaveBeenCalled();
+      expect(scraper.fetchStocksDividendsDetail).not.toHaveBeenCalled();
       expect(data).toBeDefined();
-    });
-  });
-
-  describe('.fetchStocksDividendsAnnouncementDetail()', () => {
-    it('should fetch stocks dividends announcement detail', async () => {
-      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-dividends-announcement-detail.json') });
-
-      const data = await scraper.fetchStocksDividendsAnnouncementDetail({ symbol: '00939', date: '2026-01-02' });
-      expect(mockAxios.get).toHaveBeenCalled();
-      expect(data).toBeDefined();
-      expect(data).toHaveProperty('symbol', '00939');
-      expect(data).toHaveProperty('name', '統一台灣高息動能');
-      expect(data).toHaveProperty('cashDividend', 0.072);
-      expect(data).toHaveProperty('stockDividendShares', 0);
-    });
-
-    it('should return null when no data is available', async () => {
-      mockAxios.get.mockResolvedValueOnce({ data: { stat: 'error' } });
-
-      const data = await scraper.fetchStocksDividendsAnnouncementDetail({ symbol: '00939', date: '2026-01-02' });
-      expect(mockAxios.get).toHaveBeenCalled();
-      expect(data).toBeNull();
     });
   });
 
@@ -893,6 +871,13 @@ describe('TwseScraper', () => {
         haltDate: '2024-02-29',
         sharesPerThousand: 720,
         refundPerShare: 0,
+        cashDividendPerShare: 0,
+        paidCapitalIncrease: 0,
+        subscriptionPrice: 0,
+        publicOffering: 0,
+        employeeSubscription: 0,
+        existingShareholderSubscription: 0,
+        sharesPerThousandSubscription: 0,
       });
     });
 
@@ -957,7 +942,7 @@ describe('TwseScraper', () => {
     it('should fetch stocks capital reduction announcement with detail when includeDetail is true', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
 
-      scraper.fetchStocksCapitalReductionAnnouncementDetail = jest.fn().mockResolvedValue({
+      scraper.fetchStockCapitalReductionDetail = jest.fn().mockResolvedValue({
         symbol: '1414',
         name: '東和',
         haltDate: '2025-12-31',
@@ -974,7 +959,7 @@ describe('TwseScraper', () => {
 
       const data = await scraper.fetchStocksCapitalReductionAnnouncement({ includeDetail: true });
       expect(mockAxios.get).toHaveBeenCalled();
-      expect(scraper.fetchStocksCapitalReductionAnnouncementDetail).toHaveBeenCalled();
+      expect(scraper.fetchStockCapitalReductionDetail).toHaveBeenCalled();
       expect(data).toBeDefined();
       expect(data.length).toBeGreaterThan(0);
       expect(data[0]).toHaveProperty('sharesPerThousand');
@@ -984,33 +969,12 @@ describe('TwseScraper', () => {
     it('should not fetch detail when includeDetail is false', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement.json') });
 
-      scraper.fetchStocksCapitalReductionAnnouncementDetail = jest.fn();
+      scraper.fetchStockCapitalReductionDetail = jest.fn();
 
       const data = await scraper.fetchStocksCapitalReductionAnnouncement({ includeDetail: false });
       expect(mockAxios.get).toHaveBeenCalled();
-      expect(scraper.fetchStocksCapitalReductionAnnouncementDetail).not.toHaveBeenCalled();
+      expect(scraper.fetchStockCapitalReductionDetail).not.toHaveBeenCalled();
       expect(data).toBeDefined();
-    });
-  });
-
-  describe('.fetchStocksCapitalReductionAnnouncementDetail()', () => {
-    it('should fetch stocks capital reduction announcement detail', async () => {
-      mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-capital-reduction-announcement-detail.json') });
-
-      const data = await scraper.fetchStocksCapitalReductionAnnouncementDetail({ symbol: '1414', date: '2025-12-31' });
-      expect(mockAxios.get).toHaveBeenCalled();
-      expect(data).toBeDefined();
-      expect(data).toHaveProperty('symbol', '1414');
-      expect(data).toHaveProperty('name', '東和');
-      expect(data).toHaveProperty('sharesPerThousand', 900);
-    });
-
-    it('should return null when no data is available', async () => {
-      mockAxios.get.mockResolvedValueOnce({ data: { stat: 'error' } });
-
-      const data = await scraper.fetchStocksCapitalReductionAnnouncementDetail({ symbol: '1414', date: '2025-12-31' });
-      expect(mockAxios.get).toHaveBeenCalled();
-      expect(data).toBeNull();
     });
   });
 
