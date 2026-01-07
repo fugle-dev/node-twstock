@@ -361,22 +361,22 @@ describe('TwStock', () => {
       });
 
       it('should fetch TWSE listed stocks ETF reverse splits', async () => {
-        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE', reverseSplit: true });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', reverseSplit: true });
+        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE', splitType: 'reverse-split' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', splitType: 'reverse-split' });
       });
 
       it('should fetch TWSE listed stocks ETF reverse splits for the symbol', async () => {
-        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', reverseSplit: true });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', reverseSplit: true });
+        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', splitType: 'reverse-split' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', splitType: 'reverse-split' });
       });
 
       it('should fetch TPEx listed stocks ETF reverse splits', async () => {
-        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx', reverseSplit: true });
+        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx', splitType: 'reverse-split' });
         expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks ETF reverse splits for the symbol', async () => {
-        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R', reverseSplit: true });
+        await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R', splitType: 'reverse-split' });
         expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R' });
       });
 

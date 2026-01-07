@@ -659,8 +659,8 @@ export class TwseScraper extends Scraper {
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
   }
 
-  async fetchStocksEtfSplits(options: { startDate: string; endDate: string, symbol?: string, reverseSplit?: boolean }) {
-    const { startDate, endDate, symbol } = options;
+  async fetchStocksEtfSplits(options: { startDate: string; endDate: string, symbol?: string, splitType?: 'split' | 'reverse-split' | 'all' }) {
+    const { startDate, endDate, symbol, splitType = 'all' } = options;
     const query = new URLSearchParams({
       startDate: DateTime.fromISO(startDate).toFormat('yyyyMMdd'),
       endDate: DateTime.fromISO(endDate).toFormat('yyyyMMdd'),
@@ -687,7 +687,10 @@ export class TwseScraper extends Scraper {
       data.openingReferencePrice = parseNumeric(values[4]);
       return data;
     })
-      .filter((row: any) => options.reverseSplit ? row.type === '反分割' : row.type === '分割')
+      .filter((row: any) => {
+        if (splitType === 'all') return true;
+        return splitType === 'split' ? row.type === '分割' : row.type === '反分割';
+      })
       .map((row: any) => _.omit(row, ['type'])) as StockSplits[];
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
@@ -764,7 +767,8 @@ export class TwseScraper extends Scraper {
     return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
   }
 
-  async fetchStocksEtfSplitAnnouncement(options?: { symbol?: string }) {
+  async fetchStocksEtfSplitAnnouncement(options?: { symbol?: string, splitType?: 'split' | 'reverse-split' | 'all' }) {
+    const { symbol: filterSymbol, splitType = 'all' } = options || {};
     const query = new URLSearchParams({
       response: 'json',
       _: Date.now().toString(),
@@ -775,8 +779,8 @@ export class TwseScraper extends Scraper {
     const json = response.data?.stat === 'OK' && response.data;
     if (!json || !json.data) return [];
 
-    const data = json.data.map((row: string[]) => {
-      const [haltDate, symbol, name, splitType, resumeDate, splitRatio] = row;
+    let data = json.data.map((row: string[]) => {
+      const [haltDate, symbol, name, splitTypeValue, resumeDate, splitRatio] = row;
 
       const data: Record<string, any> = {};
       data.symbol = symbol.trim();
@@ -784,13 +788,19 @@ export class TwseScraper extends Scraper {
       data.exchange = Exchange.TWSE;
       data.haltDate = rocToWestern(haltDate);
       data.resumeDate = rocToWestern(resumeDate);
-      data.splitType = splitType.trim() as '分割' | '反分割';
+      data.splitType = splitTypeValue.trim() as '分割' | '反分割';
       data.splitRatio = parseNumeric(splitRatio);
 
       return data;
     }) as StocksEtfSplitAnnouncement[];
 
-    return options?.symbol ? data.filter((item) => item.symbol === options.symbol) : data;
+    // Apply splitType filter if specified
+    if (splitType !== 'all') {
+      const targetType = splitType === 'split' ? '分割' : '反分割';
+      data = data.filter(item => item.splitType === targetType);
+    }
+
+    return filterSymbol ? data.filter((item) => item.symbol === filterSymbol) : data;
   }
 
   async fetchStocksListingApplicants(options?: { symbol?: string, year?: number }): Promise<StocksListingApplication[]> {

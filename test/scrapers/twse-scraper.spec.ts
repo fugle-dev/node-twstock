@@ -1161,6 +1161,16 @@ describe('TwseScraper', () => {
       expect(data).toEqual([{
         resumeDate: '2099-12-31',
         exchange: 'TWSE',
+        symbol: '00632R',
+        name: '元大台灣50反1',
+        previousClose: 1,
+        referencePrice: 100,
+        limitUpPrice: 110,
+        limitDownPrice: 90,
+        openingReferencePrice: 100,
+      }, {
+        resumeDate: '2099-12-31',
+        exchange: 'TWSE',
         symbol: '00631L',
         name: '元大台灣50正2',
         previousClose: 1000,
@@ -1195,7 +1205,7 @@ describe('TwseScraper', () => {
     it('should fetch stocks ETF reverse splits for the given startDate and endDate', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-etf-splits.json') });
 
-      const data = await scraper.fetchStocksEtfSplits({ startDate: '2099-01-01', endDate: '2099-12-31', reverseSplit: true });
+      const data = await scraper.fetchStocksEtfSplits({ startDate: '2099-01-01', endDate: '2099-12-31', splitType: 'reverse-split' });
       expect(mockAxios.get).toHaveBeenCalledWith(
         'https://www.twse.com.tw/rwd/zh/split/TWTCAU?startDate=20990101&endDate=20991231&response=json',
       );
@@ -1216,7 +1226,7 @@ describe('TwseScraper', () => {
     it('should fetch stocks ETF reverse splits for the specified stock on the given date', async () => {
       mockAxios.get.mockResolvedValueOnce({ data: require('../fixtures/twse-stocks-etf-splits.json') });
 
-      const data = await scraper.fetchStocksEtfSplits({ startDate: '2099-01-01', endDate: '2099-12-31', symbol: '00632R', reverseSplit: true });
+      const data = await scraper.fetchStocksEtfSplits({ startDate: '2099-01-01', endDate: '2099-12-31', symbol: '00632R', splitType: 'reverse-split' });
       expect(mockAxios.get).toHaveBeenCalledWith(
         'https://www.twse.com.tw/rwd/zh/split/TWTCAU?startDate=20990101&endDate=20991231&response=json',
       );

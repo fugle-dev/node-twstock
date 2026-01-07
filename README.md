@@ -928,7 +928,7 @@ twstock.stocks.splitAnnouncement({ symbol: '1234' })
   * `endDate`: {string} 結束日期 (`'YYYY-MM-DD'`)
   * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃)
   * `symbol` (optional): {string} ETF 代號
-  * `reverseSplit` (optional): {boolean} 反分割
+  * `splitType` (optional): {string} 分割類型，可選值: `'split'` (分割)、`'reverse-split'` (反分割)、`'all'` (全部，預設值)
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `resumeDate`: {string} 恢復買賣日期
   * `exchange`: {string} 市場別
@@ -941,7 +941,16 @@ twstock.stocks.splitAnnouncement({ symbol: '1234' })
   * `openingReferencePrice`: {number} 開盤競價基準
 
 ```js
+// 查詢所有類型（預設）
 twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', exchange: 'TWSE' })
+  .then(data => console.log(data));
+
+// 只查詢分割
+twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', exchange: 'TWSE', splitType: 'split' })
+  .then(data => console.log(data));
+
+// 只查詢反分割
+twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', exchange: 'TWSE', splitType: 'reverse-split' })
   .then(data => console.log(data));
 ```
 
@@ -952,7 +961,7 @@ twstock.stocks.etfSplits({ startDate: '2024-12-01', endDate: '2024-12-31', excha
 * `options`: {Object}
   * `exchange` (optional): {string} 市場別 (`'TWSE'`：上市；`'TPEx'`：上櫃，預設為 `'TWSE'`)
   * `symbol` (optional): {string} ETF 代號
-  * `splitType` (optional): {string} 分割類型 (`'分割'` 或 `'反分割'`)。若未指定則返回所有類型
+  * `splitType` (optional): {string} 分割類型，可選值: `'split'` (分割)、`'reverse-split'` (反分割)、`'all'` (全部，預設值)
 * Returns: {Promise} 成功時以 {Object[]} 履行，其中 `Object` 包含以下屬性：
   * `symbol`: {string} ETF 代號
   * `name`: {string} ETF 名稱

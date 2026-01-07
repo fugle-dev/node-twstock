@@ -217,8 +217,8 @@ export class TwStock {
       : await this._scraper.getTwseScraper().fetchStocksSplits({ symbol, startDate, endDate });
   }
 
-  private async fetchStocksEtfSplits(options: { exchange?: 'TWSE' | 'TPEx', startDate: string, endDate: string, symbol?: string, reverseSplit?: boolean }) {
-    const { startDate, endDate, symbol, reverseSplit } = options;
+  private async fetchStocksEtfSplits(options: { exchange?: 'TWSE' | 'TPEx', startDate: string, endDate: string, symbol?: string, splitType?: 'split' | 'reverse-split' | 'all' }) {
+    const { startDate, endDate, symbol, splitType = 'all' } = options;
 
     if (symbol && !this._stocks.has(symbol)) {
       const stocks = await this.loadStocks({ symbol });
@@ -230,11 +230,16 @@ export class TwStock {
 
     return (exchange === Exchange.TPEx)
       ? await (
-        reverseSplit
+        splitType === 'reverse-split'
           ? this._scraper.getTpexScraper().fetchStocksEtfReverseSplits({ symbol, startDate, endDate })
-          : this._scraper.getTpexScraper().fetchStocksEtfSplits({ symbol, startDate, endDate })
+          : splitType === 'split'
+          ? this._scraper.getTpexScraper().fetchStocksEtfSplits({ symbol, startDate, endDate })
+          : [
+              ...await this._scraper.getTpexScraper().fetchStocksEtfSplits({ symbol, startDate, endDate }),
+              ...await this._scraper.getTpexScraper().fetchStocksEtfReverseSplits({ symbol, startDate, endDate })
+            ]
         )
-      : await this._scraper.getTwseScraper().fetchStocksEtfSplits({ symbol, startDate, endDate, reverseSplit });
+      : await this._scraper.getTwseScraper().fetchStocksEtfSplits({ symbol, startDate, endDate, splitType });
   }
 
   private async fetchStocksDividendsAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, includeDetail?: boolean }) {
@@ -258,14 +263,14 @@ export class TwStock {
       : await this._scraper.getTwseScraper().fetchStocksSplitAnnouncement({ symbol, includeDetail });
   }
 
-  private async fetchStocksEtfSplitAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, splitType?: '分割' | '反分割' }) {
-    const { exchange = Exchange.TWSE, symbol, splitType } = options || {};
+  private async fetchStocksEtfSplitAnnouncement(options?: { exchange?: 'TWSE' | 'TPEx', symbol?: string, splitType?: 'split' | 'reverse-split' | 'all' }) {
+    const { exchange = Exchange.TWSE, symbol, splitType = 'all' } = options || {};
 
     if (exchange === Exchange.TPEx) {
       // TPEx has separate endpoints for split and reverse split
-      const data = splitType === '反分割'
+      const data = splitType === 'reverse-split'
         ? await this._scraper.getTpexScraper().fetchStocksEtfReverseSplitAnnouncement({ symbol })
-        : splitType === '分割'
+        : splitType === 'split'
         ? await this._scraper.getTpexScraper().fetchStocksEtfSplitAnnouncement({ symbol })
         : [
             ...await this._scraper.getTpexScraper().fetchStocksEtfSplitAnnouncement({ symbol }),
@@ -275,8 +280,9 @@ export class TwStock {
     }
 
     // TWSE returns all split types in one call, filter by splitType if specified
-    const data = await this._scraper.getTwseScraper().fetchStocksEtfSplitAnnouncement({ symbol });
-    return splitType ? data.filter(item => item.splitType === splitType) : data;
+    const targetType = splitType === 'split' ? '分割' : splitType === 'reverse-split' ? '反分割' : undefined;
+    const data = await this._scraper.getTwseScraper().fetchStocksEtfSplitAnnouncement({ symbol, splitType });
+    return targetType ? data.filter(item => item.splitType === targetType) : data;
   }
 
   private async fetchStocksCapitalReductions(options: { exchange?: 'TWSE' | 'TPEx', startDate: string, endDate: string, symbol?: string, includeDetail?: boolean }) {
