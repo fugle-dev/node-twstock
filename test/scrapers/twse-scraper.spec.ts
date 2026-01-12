@@ -1061,8 +1061,8 @@ describe('TwseScraper', () => {
       expect(data[0]).toHaveProperty('haltDate');
       expect(data[0]).toHaveProperty('resumeDate');
       expect(data[0]).toHaveProperty('splitRatio');
-      expect(data[0]).toHaveProperty('oldFaceValue');
-      expect(data[0]).toHaveProperty('newFaceValue');
+      expect(data[0]).toHaveProperty('parValueBefore');
+      expect(data[0]).toHaveProperty('parValueAfter');
     });
 
     it('should fetch stocks split announcement for the specified stock', async () => {
@@ -1081,8 +1081,8 @@ describe('TwseScraper', () => {
         haltDate: '2026-01-15',
         resumeDate: '2026-01-25',
         splitRatio: 0.5,
-        oldFaceValue: 10,
-        newFaceValue: 5,
+        parValueBefore: 10,
+        parValueAfter: 5,
       });
     });
 
@@ -1102,8 +1102,8 @@ describe('TwseScraper', () => {
         name: '大研生醫',
         haltDate: '2026-01-09',
         sharesPerOldShare: 10,
-        oldFaceValue: 10,
-        newFaceValue: 1,
+        parValueBefore: 10,
+        parValueAfter: 1,
       });
 
       const data = await scraper.fetchStocksSplitAnnouncement({ includeDetail: true });
@@ -1136,8 +1136,8 @@ describe('TwseScraper', () => {
       expect(data).toHaveProperty('symbol', '7780');
       expect(data).toHaveProperty('name', '大研生醫');
       expect(data).toHaveProperty('sharesPerOldShare', 10);
-      expect(data).toHaveProperty('oldFaceValue', 10);
-      expect(data).toHaveProperty('newFaceValue', 1);
+      expect(data).toHaveProperty('parValueBefore', 10);
+      expect(data).toHaveProperty('parValueAfter', 1);
     });
 
     it('should return null when no data is available', async () => {

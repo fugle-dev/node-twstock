@@ -895,8 +895,8 @@ twstock.stocks.splits({ startDate: '2022-07-01', endDate: '2022-07-31', exchange
   * `haltDate`: {string} 停止買賣日期
   * `resumeDate`: {string} 恢復買賣日期
   * `splitRatio`: {number} 每股換發新股比例
-  * `oldFaceValue`: {number} 舊面額 (元)
-  * `newFaceValue`: {number} 新面額 (元)
+  * `parValueBefore`: {number} 變更前面額 (元)
+  * `parValueAfter`: {number} 變更後面額 (元)
   * `referencePrice`: {number} 恢復買賣參考價 (TPEx 提供，TWSE 為 null)
   * **當 `includeDetail=true` 時 (僅適用於 TWSE)，額外包含以下欄位：**
     * `sharesPerOldShare`: {number} 每股換發新股票
@@ -913,8 +913,8 @@ twstock.stocks.splitAnnouncement({ symbol: '1234' })
 //     haltDate: '2026-01-15',
 //     resumeDate: '2026-01-25',
 //     splitRatio: 0.5,
-//     oldFaceValue: 10,
-//     newFaceValue: 5
+//     parValueBefore: 10,
+//     parValueAfter: 5
 //   }
 // ]
 ```

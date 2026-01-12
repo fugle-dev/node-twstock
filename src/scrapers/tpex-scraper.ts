@@ -797,8 +797,8 @@ export class TpexScraper extends Scraper {
         name,
         haltDate,
         splitRatio,
-        oldFaceValue,
-        newFaceValue,
+        parValueBefore,
+        parValueAfter,
         resumeDate,
       ] = row;
 
@@ -809,8 +809,8 @@ export class TpexScraper extends Scraper {
         haltDate: rocToWestern(haltDate),
         resumeDate: rocToWestern(resumeDate),
         splitRatio: parseNumeric(splitRatio),
-        oldFaceValue: parseNumeric(oldFaceValue),
-        newFaceValue: parseNumeric(newFaceValue),
+        parValueBefore: parseNumeric(parValueBefore),
+        parValueAfter: parseNumeric(parValueAfter),
       };
     }) as StocksSplitAnnouncement[];
 

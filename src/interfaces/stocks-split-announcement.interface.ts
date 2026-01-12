@@ -5,8 +5,8 @@ export interface StocksSplitAnnouncement {
   haltDate: string;
   resumeDate: string;
   splitRatio: number | null;
-  oldFaceValue: number | null;
-  newFaceValue: number | null;
+  parValueBefore: number | null;
+  parValueAfter: number | null;
   // Optional detail fields (available when includeDetail=true)
   sharesPerOldShare?: number | null;
 }

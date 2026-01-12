@@ -561,8 +561,8 @@ export class TwseScraper extends Scraper {
     data.name = name.trim();
     data.haltDate = rocToWestern(values[0]);
     data.sharesPerOldShare = parseNumeric(values[1]);
-    data.oldFaceValue = parseNumeric(values[2]);
-    data.newFaceValue = parseNumeric(values[3]);
+    data.parValueBefore = parseNumeric(values[2]);
+    data.parValueAfter = parseNumeric(values[3]);
 
     return data;
   }
@@ -715,8 +715,8 @@ export class TwseScraper extends Scraper {
         name,
         resumeDate,
         splitRatio,
-        oldFaceValue,
-        newFaceValue,
+        parValueBefore,
+        parValueAfter,
         detailField1,    // row[7]: "7780  ,20251230"
         detailField2,    // row[8]: "7780  ,20260109,20260119"
         detailField3     // row[9]: ",10.00,1.00"
@@ -729,8 +729,8 @@ export class TwseScraper extends Scraper {
       data.haltDate = rocToWestern(haltDate);
       data.resumeDate = rocToWestern(resumeDate);
       data.splitRatio = parseNumeric(splitRatio);
-      data.oldFaceValue = parseNumeric(oldFaceValue);
-      data.newFaceValue = parseNumeric(newFaceValue);
+      data.parValueBefore = parseNumeric(parValueBefore);
+      data.parValueAfter = parseNumeric(parValueAfter);
 
       // Extract detail query date from detailField1 (format: "symbol,date")
       // Example: "7780  ,20251230" → extract "20251230"
