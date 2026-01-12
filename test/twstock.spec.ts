@@ -68,7 +68,11 @@ describe('TwStock', () => {
   let twstock: TwStock;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     twstock = new TwStock();
+    // Mock return values for TPEx ETF splits methods
+    (TpexScraper.prototype.fetchStocksEtfSplits as jest.Mock).mockResolvedValue([]);
+    (TpexScraper.prototype.fetchStocksEtfReverseSplits as jest.Mock).mockResolvedValue([]);
   });
 
   describe('.stocks', () => {
@@ -108,22 +112,22 @@ describe('TwStock', () => {
     describe('.historical()', () => {
       it('should fetch TWSE listed stocks historical data', async () => {
         await twstock.stocks.historical({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks historical data for the symbol', async () => {
         await twstock.stocks.historical({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksHistorical).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks historical data', async () => {
         await twstock.stocks.historical({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks historical data for the symbol', async () => {
         await twstock.stocks.historical({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksHistorical).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -134,22 +138,22 @@ describe('TwStock', () => {
     describe('.institutional()', () => {
       it('should fetch TWSE listed stocks institutional investors\' trades', async () => {
         await twstock.stocks.institutional({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksInstitutional).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksInstitutional).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks institutional investors\' trades for the symbol', async () => {
         await twstock.stocks.institutional({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksInstitutional).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksInstitutional).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed institutional investors\' trades', async () => {
         await twstock.stocks.institutional({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksInstitutional).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksInstitutional).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks institutional investors\' trades for the symbol', async () => {
         await twstock.stocks.institutional({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksInstitutional).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksInstitutional).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -160,22 +164,22 @@ describe('TwStock', () => {
     describe('.finiHoldings()', () => {
       it('should fetch TWSE listed stocks FINI holdings', async () => {
         await twstock.stocks.finiHoldings({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksFiniHoldings).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksFiniHoldings).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks FINI holdings for the symbol', async () => {
         await twstock.stocks.finiHoldings({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksFiniHoldings).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksFiniHoldings).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks FINI holdings', async () => {
         await twstock.stocks.finiHoldings({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksFiniHoldings).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksFiniHoldings).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks FINI holdings for the symbol', async () => {
         await twstock.stocks.finiHoldings({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksFiniHoldings).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksFiniHoldings).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -186,22 +190,22 @@ describe('TwStock', () => {
     describe('.marginTrades()', () => {
       it('should fetch TWSE listed stocks margin trades', async () => {
         await twstock.stocks.marginTrades({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksMarginTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks margin trades for the symbol', async () => {
         await twstock.stocks.marginTrades({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksMarginTrades).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks margin trades', async () => {
         await twstock.stocks.marginTrades({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksMarginTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks margin trades for the symbol', async () => {
         await twstock.stocks.marginTrades({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksMarginTrades).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -212,22 +216,22 @@ describe('TwStock', () => {
     describe('.shortSales()', () => {
       it('should fetch TWSE listed stocks short sales', async () => {
         await twstock.stocks.shortSales({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksShortSales).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksShortSales).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks short sales for the symbol', async () => {
         await twstock.stocks.shortSales({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksShortSales).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksShortSales).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks short sales', async () => {
         await twstock.stocks.shortSales({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksShortSales).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksShortSales).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks short sales for the symbol', async () => {
         await twstock.stocks.shortSales({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksShortSales).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksShortSales).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -238,22 +242,22 @@ describe('TwStock', () => {
     describe('.values()', () => {
       it('should fetch TWSE listed stocks values', async () => {
         await twstock.stocks.values({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksValues).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksValues).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks values for the symbol', async () => {
         await twstock.stocks.values({ date: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksValues).toBeCalledWith({ date: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksValues).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks values', async () => {
         await twstock.stocks.values({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksValues).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksValues).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks values for the symbol', async () => {
         await twstock.stocks.values({ date: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksValues).toBeCalledWith({ date: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksValues).toHaveBeenCalledWith({ date: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -264,22 +268,22 @@ describe('TwStock', () => {
     describe('.dividends()', () => {
       it('should fetch TWSE listed stocks dividends', async () => {
         await twstock.stocks.dividends({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksDividends).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksDividends).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks dividends for the symbol', async () => {
         await twstock.stocks.dividends({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksDividends).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksDividends).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks dividends', async () => {
         await twstock.stocks.dividends({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksDividends).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksDividends).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks dividends for the symbol', async () => {
         await twstock.stocks.dividends({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksDividends).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksDividends).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -290,22 +294,22 @@ describe('TwStock', () => {
     describe('.capitalReductions()', () => {
       it('should fetch TWSE listed stocks capital reductions', async () => {
         await twstock.stocks.capitalReductions({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksCapitalReductions).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksCapitalReductions).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks capital reductions for the symbol', async () => {
         await twstock.stocks.capitalReductions({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksCapitalReductions).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksCapitalReductions).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks capital reductions', async () => {
         await twstock.stocks.capitalReductions({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksCapitalReductions).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksCapitalReductions).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks capital reductions for the symbol', async () => {
         await twstock.stocks.capitalReductions({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksCapitalReductions).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksCapitalReductions).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -316,22 +320,22 @@ describe('TwStock', () => {
     describe('.splits()', () => {
       it('should fetch TWSE listed stocks change of par value', async () => {
         await twstock.stocks.splits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TWSE listed stocks change of par value for the symbol', async () => {
         await twstock.stocks.splits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
-        expect(TwseScraper.prototype.fetchStocksSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
+        expect(TwseScraper.prototype.fetchStocksSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '2330' });
       });
 
       it('should fetch TPEx listed stocks change of par value', async () => {
         await twstock.stocks.splits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks change of par value for the symbol', async () => {
         await twstock.stocks.splits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
-        expect(TpexScraper.prototype.fetchStocksSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
+        expect(TpexScraper.prototype.fetchStocksSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '6488' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -342,42 +346,42 @@ describe('TwStock', () => {
     describe('.etfSplits()', () => {
       it('should fetch TWSE listed stocks ETF splits', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', splitType: 'all' });
       });
 
       it('should fetch TWSE listed stocks ETF splits for the symbol', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00631L' });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00631L' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00631L', splitType: 'all' });
       });
 
       it('should fetch TPEx listed stocks ETF splits', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks ETF splits for the symbol', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00680L' });
-        expect(TpexScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00680L' });
+        expect(TpexScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00680L' });
       });
 
       it('should fetch TWSE listed stocks ETF reverse splits', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TWSE', splitType: 'reverse-split' });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', splitType: 'reverse-split' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', splitType: 'reverse-split' });
       });
 
       it('should fetch TWSE listed stocks ETF reverse splits for the symbol', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', splitType: 'reverse-split' });
-        expect(TwseScraper.prototype.fetchStocksEtfSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', splitType: 'reverse-split' });
+        expect(TwseScraper.prototype.fetchStocksEtfSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00632R', splitType: 'reverse-split' });
       });
 
       it('should fetch TPEx listed stocks ETF reverse splits', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', exchange: 'TPEx', splitType: 'reverse-split' });
-        expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30' });
       });
 
       it('should fetch TPEx listed stocks ETF reverse splits for the symbol', async () => {
         await twstock.stocks.etfSplits({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R', splitType: 'reverse-split' });
-        expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toBeCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R' });
+        expect(TpexScraper.prototype.fetchStocksEtfReverseSplits).toHaveBeenCalledWith({ startDate: '2023-01-30', endDate: '2023-01-30', symbol: '00681R' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -388,7 +392,7 @@ describe('TwStock', () => {
     describe('.shareholders()', () => {
       it('should fetch stocks holders for the symbol', async () => {
         await twstock.stocks.shareholders({ date: '2022-12-30', symbol: '2330' });
-        expect(TdccScraper.prototype.fetchStocksShareholders).toBeCalledWith({ date: '2022-12-30', symbol: '2330' });
+        expect(TdccScraper.prototype.fetchStocksShareholders).toHaveBeenCalledWith({ date: '2022-12-30', symbol: '2330' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -397,24 +401,24 @@ describe('TwStock', () => {
 
       it('should fetch stocks holders from the recent week', async () => {
         await twstock.stocks.shareholders();
-        expect(TdccScraper.prototype.fetchStocksShareholdersRecentWeek).toBeCalledWith();
+        expect(TdccScraper.prototype.fetchStocksShareholdersRecentWeek).toHaveBeenCalledWith();
       });
 
       it('should fetch stocks holders for the symbol from the recent week', async () => {
         await twstock.stocks.shareholders({ symbol: '2330' });
-        expect(TdccScraper.prototype.fetchStocksShareholdersRecentWeek).toBeCalledWith({ symbol: '2330' });
+        expect(TdccScraper.prototype.fetchStocksShareholdersRecentWeek).toHaveBeenCalledWith({ symbol: '2330' });
       });
     });
 
     describe('.eps()', () => {
       it('should fetch TWSE listed stocks quarterly EPS', async () => {
         await twstock.stocks.eps({ exchange: 'TWSE', year: 2023, quarter: 1 });
-        expect(MopsScraper.prototype.fetchStocksEps).toBeCalledWith({ exchange: 'TWSE', year: 2023, quarter: 1 });
+        expect(MopsScraper.prototype.fetchStocksEps).toHaveBeenCalledWith({ exchange: 'TWSE', year: 2023, quarter: 1 });
       });
 
       it('should fetch TWSE listed stocks quarterly EPS for the symbol', async () => {
         await twstock.stocks.eps({ symbol: '2330', year: 2023, quarter: 1 });
-        expect(MopsScraper.prototype.fetchStocksEps).toBeCalledWith({ exchange: 'TWSE', symbol: '2330', year: 2023, quarter: 1 });
+        expect(MopsScraper.prototype.fetchStocksEps).toHaveBeenCalledWith({ exchange: 'TWSE', symbol: '2330', year: 2023, quarter: 1 });
       });
 
       it('should throw an error if the exchange or symbol is not provided', async () => {
@@ -433,12 +437,12 @@ describe('TwStock', () => {
     describe('.revenue()', () => {
       it('should fetch TWSE listed stocks monthly revenue', async () => {
         await twstock.stocks.revenue({ exchange: 'TWSE', year: 2023, month: 1 });
-        expect(MopsScraper.prototype.fetchStocksRevenue).toBeCalledWith({ exchange: 'TWSE', year: 2023, month: 1 });
+        expect(MopsScraper.prototype.fetchStocksRevenue).toHaveBeenCalledWith({ exchange: 'TWSE', year: 2023, month: 1 });
       });
 
       it('should fetch TWSE listed stocks monthly revenue for the symbol', async () => {
         await twstock.stocks.revenue({ symbol: '2330', year: 2023, month: 1 });
-        expect(MopsScraper.prototype.fetchStocksRevenue).toBeCalledWith({ exchange: 'TWSE', symbol: '2330', year: 2023, month: 1 });
+        expect(MopsScraper.prototype.fetchStocksRevenue).toHaveBeenCalledWith({ exchange: 'TWSE', symbol: '2330', year: 2023, month: 1 });
       });
 
       it('should throw an error if the exchange or symbol is not provided', async () => {
@@ -457,22 +461,22 @@ describe('TwStock', () => {
     describe('.listingApplicants()', () => {
       it('should fetch TWSE stocks listing applicants by default', async () => {
         await twstock.stocks.listingApplicants();
-        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: undefined });
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toHaveBeenCalledWith({ symbol: undefined, year: undefined });
       });
 
       it('should fetch TPEx stocks listing applicants when specified', async () => {
         await twstock.stocks.listingApplicants({ exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: undefined });
+        expect(TpexScraper.prototype.fetchStocksListingApplicants).toHaveBeenCalledWith({ symbol: undefined, year: undefined });
       });
 
       it('should filter by symbol', async () => {
         await twstock.stocks.listingApplicants({ symbol: '2432' });
-        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: '2432', year: undefined });
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toHaveBeenCalledWith({ symbol: '2432', year: undefined });
       });
 
       it('should filter by year', async () => {
         await twstock.stocks.listingApplicants({ year: 2023 });
-        expect(TwseScraper.prototype.fetchStocksListingApplicants).toBeCalledWith({ symbol: undefined, year: 2023 });
+        expect(TwseScraper.prototype.fetchStocksListingApplicants).toHaveBeenCalledWith({ symbol: undefined, year: 2023 });
       });
     });
   });
@@ -514,22 +518,22 @@ describe('TwStock', () => {
     describe('.historical()', () => {
       it('should fetch TWSE listed indices historical data', async () => {
         await twstock.indices.historical({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchIndicesHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchIndicesHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed indices historical data for the symbol', async () => {
         await twstock.indices.historical({ date: '2023-01-30', symbol: 'IX0001' });
-        expect(TwseScraper.prototype.fetchIndicesHistorical).toBeCalledWith({ date: '2023-01-30', symbol: 'IX0001' });
+        expect(TwseScraper.prototype.fetchIndicesHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'IX0001' });
       });
 
       it('should fetch TPEx listed indices historical data', async () => {
         await twstock.indices.historical({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchIndicesHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchIndicesHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed indices historical data', async () => {
         await twstock.indices.historical({ date: '2023-01-30', symbol: 'IX0043' });
-        expect(TpexScraper.prototype.fetchIndicesHistorical).toBeCalledWith({ date: '2023-01-30', symbol: 'IX0043' });
+        expect(TpexScraper.prototype.fetchIndicesHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'IX0043' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -540,22 +544,22 @@ describe('TwStock', () => {
     describe('.trades()', () => {
       it('should fetch TWSE listed indices trades', async () => {
         await twstock.indices.trades({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchIndicesTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchIndicesTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TWSE listed indices trades for the symbol', async () => {
         await twstock.indices.trades({ date: '2023-01-30', symbol: 'IX0028' });
-        expect(TwseScraper.prototype.fetchIndicesTrades).toBeCalledWith({ date: '2023-01-30', symbol: 'IX0028' });
+        expect(TwseScraper.prototype.fetchIndicesTrades).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'IX0028' });
       });
 
       it('should fetch TPEx listed indices trades', async () => {
         await twstock.indices.trades({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchIndicesTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchIndicesTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx listed indices trades for the symbol', async () => {
         await twstock.indices.trades({ date: '2023-01-30', symbol: 'IX0053' });
-        expect(TpexScraper.prototype.fetchIndicesTrades).toBeCalledWith({ date: '2023-01-30', symbol: 'IX0053' });
+        expect(TpexScraper.prototype.fetchIndicesTrades).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'IX0053' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -568,48 +572,48 @@ describe('TwStock', () => {
     describe('.trades()', () => {
       it('should fetch TWSE market trades', async () => {
         await twstock.market.trades({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchMarketTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchMarketTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx market trades', async () => {
         await twstock.market.trades({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchMarketTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchMarketTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
 
     describe('.breadth()', () => {
       it('should fetch TWSE market breadth', async () => {
         await twstock.market.breadth({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchMarketBreadth).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchMarketBreadth).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx market breadth', async () => {
         await twstock.market.breadth({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchMarketBreadth).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchMarketBreadth).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
 
     describe('.institutional()', () => {
       it('should fetch TWSE market institutional investors\' trades', async () => {
         await twstock.market.institutional({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchMarketInstitutional).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchMarketInstitutional).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx market institutional investors\' trades', async () => {
         await twstock.market.institutional({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchMarketInstitutional).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchMarketInstitutional).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
 
     describe('.marginTrades()', () => {
       it('should fetch TWSE market margin trades', async () => {
         await twstock.market.marginTrades({ date: '2023-01-30', exchange: 'TWSE' });
-        expect(TwseScraper.prototype.fetchMarketMarginTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TwseScraper.prototype.fetchMarketMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TPEx market margin trades', async () => {
         await twstock.market.marginTrades({ date: '2023-01-30', exchange: 'TPEx' });
-        expect(TpexScraper.prototype.fetchMarketMarginTrades).toBeCalledWith({ date: '2023-01-30' });
+        expect(TpexScraper.prototype.fetchMarketMarginTrades).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
   });
@@ -672,22 +676,22 @@ describe('TwStock', () => {
     describe('.historical()', () => {
       it('should fetch futures historical data', async () => {
         await twstock.futopt.historical({ date: '2023-01-30', type: 'F' });
-        expect(TaifexScraper.prototype.fetchFuturesHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TaifexScraper.prototype.fetchFuturesHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch options historical data', async () => {
         await twstock.futopt.historical({ date: '2023-01-30', type: 'O' });
-        expect(TaifexScraper.prototype.fetchOptionsHistorical).toBeCalledWith({ date: '2023-01-30' });
+        expect(TaifexScraper.prototype.fetchOptionsHistorical).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
 
       it('should fetch TXF historical data', async () => {
         await twstock.futopt.historical({ date: '2023-01-30', symbol: 'TXF' });
-        expect(TaifexScraper.prototype.fetchFuturesHistorical).toBeCalledWith({ date: '2023-01-30', symbol: 'TXF' });
+        expect(TaifexScraper.prototype.fetchFuturesHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXF' });
       });
 
       it('should fetch TXO historical data', async () => {
         await twstock.futopt.historical({ date: '2023-01-30', symbol: 'TXO' });
-        expect(TaifexScraper.prototype.fetchOptionsHistorical).toBeCalledWith({ date: '2023-01-30', symbol: 'TXO' });
+        expect(TaifexScraper.prototype.fetchOptionsHistorical).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXO' });
       });
 
       it('should throw an error if the symbol is not found', async () => {
@@ -698,52 +702,52 @@ describe('TwStock', () => {
     describe('.institutional()', () => {
       it('should fetch futures institutional investors\' trades', async () => {
         await twstock.futopt.institutional({ date: '2023-01-30', symbol: 'TXF' });
-        expect(TaifexScraper.prototype.fetchFuturesInstitutional).toBeCalledWith({ date: '2023-01-30', symbol: 'TXF' });
+        expect(TaifexScraper.prototype.fetchFuturesInstitutional).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXF' });
       });
 
       it('should fetch options institutional investors\' trades', async () => {
         await twstock.futopt.institutional({ date: '2023-01-30', symbol: 'TXO' });
-        expect(TaifexScraper.prototype.fetchOptionsInstitutional).toBeCalledWith({ date: '2023-01-30', symbol: 'TXO' });
+        expect(TaifexScraper.prototype.fetchOptionsInstitutional).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXO' });
       });
     });
 
     describe('.largeTraders()', () => {
       it('should fetch futures large traders\' position', async () => {
         await twstock.futopt.largeTraders({ date: '2023-01-30', symbol: 'TXF' });
-        expect(TaifexScraper.prototype.fetchFuturesLargeTraders).toBeCalledWith({ date: '2023-01-30', symbol: 'TXF' });
+        expect(TaifexScraper.prototype.fetchFuturesLargeTraders).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXF' });
       });
 
       it('should fetch options large traders\' position', async () => {
         await twstock.futopt.largeTraders({ date: '2023-01-30', symbol: 'TXO' });
-        expect(TaifexScraper.prototype.fetchOptionsLargeTraders).toBeCalledWith({ date: '2023-01-30', symbol: 'TXO' });
+        expect(TaifexScraper.prototype.fetchOptionsLargeTraders).toHaveBeenCalledWith({ date: '2023-01-30', symbol: 'TXO' });
       });
     });
 
     describe('.mxfRetailPosition()', () => {
       it('should fetch MXF retail position', async () => {
         await twstock.futopt.mxfRetailPosition({ date: '2023-01-30' });
-        expect(TaifexScraper.prototype.fetchMxfRetailPosition).toBeCalledWith({ date: '2023-01-30' });
+        expect(TaifexScraper.prototype.fetchMxfRetailPosition).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
 
     describe('.tmfRetailPosition()', () => {
       it('should fetch TMF retail position', async () => {
         await twstock.futopt.tmfRetailPosition({ date: '2024-08-09' });
-        expect(TaifexScraper.prototype.fetchTmfRetailPosition).toBeCalledWith({ date: '2024-08-09' });
+        expect(TaifexScraper.prototype.fetchTmfRetailPosition).toHaveBeenCalledWith({ date: '2024-08-09' });
       });
     });
 
     describe('.txoPutCallRatio()', () => {
       it('should fetch TXO Put/Call ratio', async () => {
         await twstock.futopt.txoPutCallRatio({ date: '2023-01-30' });
-        expect(TaifexScraper.prototype.fetchTxoPutCallRatio).toBeCalledWith({ date: '2023-01-30' });
+        expect(TaifexScraper.prototype.fetchTxoPutCallRatio).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
 
     describe('.exchangeRates()', () => {
       it('should fetch exchange rates', async () => {
         await twstock.futopt.exchangeRates({ date: '2023-01-30' });
-        expect(TaifexScraper.prototype.fetchExchangeRates).toBeCalledWith({ date: '2023-01-30' });
+        expect(TaifexScraper.prototype.fetchExchangeRates).toHaveBeenCalledWith({ date: '2023-01-30' });
       });
     });
   });

@@ -49,7 +49,7 @@
     "@commitlint/cli": "^16.3.0",
     "@commitlint/config-conventional": "^16.2.4",
     "@release-it/conventional-changelog": "^5.1.1",
-    "@types/jest": "^27.5.2",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.14.200",
     "@types/luxon": "^3.3.6",
     "@types/node": "^16.18.18",
@@ -59,11 +59,11 @@
     "codecov": "^3.8.3",
     "eslint": "^7.32.0",
     "husky": "^7.0.4",
-    "jest": "^27.5.1",
+    "jest": "^30.2.0",
     "jest-mock-axios": "^4.7.3",
     "release-it": "^15.10.0",
     "rimraf": "^3.0.2",
-    "ts-jest": "^27.1.5",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
   }
