@@ -1,5 +1,7 @@
 # Changelog
 
+# [3.0.0](https://github.com/fugle-dev/node-twstock/compare/v3.0.0-alpha.5...v3.0.0) (2026-03-31)
+
 # [2.2.0](https://github.com/chunkai1312/node-twstock/compare/v2.1.0...v2.2.0) (2024-12-03)
 
 
