@@ -679,19 +679,19 @@ export class TwseScraper extends Scraper {
       data.exchange = Exchange.TWSE;
       data.symbol = symbol;
       data.name = name.trim();
-      data.type = type;
       data.previousClose = parseNumeric(values[0]);
       data.referencePrice = parseNumeric(values[1]);
       data.limitUpPrice = parseNumeric(values[2]);
       data.limitDownPrice = parseNumeric(values[3]);
       data.openingReferencePrice = parseNumeric(values[4]);
+      const inferredType = type || (data.previousClose > data.referencePrice ? '分割' : '反分割');
+      data.splitType = inferredType === '分割' ? 'split' : 'reverse-split';
       return data;
     })
       .filter((row: any) => {
         if (splitType === 'all') return true;
-        return splitType === 'split' ? row.type === '分割' : row.type === '反分割';
-      })
-      .map((row: any) => _.omit(row, ['type'])) as StockSplits[];
+        return row.splitType === splitType;
+      }) as StockSplits[];
 
     return symbol ? data.filter((data) => data.symbol === symbol) : data;
   }

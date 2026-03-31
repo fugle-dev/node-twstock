@@ -442,6 +442,7 @@ export class TpexScraper extends Scraper {
       data.exchange = Exchange.TPEx;
       data.symbol = symbol;
       data.name = name.trim();
+      data.splitType = 'split';
       data.previousClose = numeral(values[0]).value();
       data.referencePrice = numeral(values[1]).value();
       data.limitUpPrice = numeral(values[2]).value();
@@ -474,6 +475,7 @@ export class TpexScraper extends Scraper {
       data.exchange = Exchange.TPEx;
       data.symbol = symbol;
       data.name = name.trim();
+      data.splitType = 'reverse-split';
       data.previousClose = numeral(values[0]).value();
       data.referencePrice = numeral(values[1]).value();
       data.limitUpPrice = numeral(values[2]).value();

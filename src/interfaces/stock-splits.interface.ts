@@ -3,6 +3,7 @@ export interface StockSplits {
   exchange: string;
   symbol: string;
   name: string;
+  splitType: 'split' | 'reverse-split';
   previousClose: number;
   referencePrice: number;
   limitUpPrice: number;
